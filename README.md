@@ -16,8 +16,8 @@ Progress (checked = done, <- = being worked on):<br>
   - [ ] In-game UI rendering
   - [ ] 2D <-
     - [X] Shapes
-    - [X] Coloring **<-**
-    - [ ] Texturing
+    - [X] Coloring
+    - [ ] Texturing **<-**
   - [ ] 3D
     - [ ] Objects
     - [ ] Lighting
