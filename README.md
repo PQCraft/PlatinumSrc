@@ -1,7 +1,10 @@
 # PlatinumSrc
-A WIP Half Life 1 GoldSrc style 3D engine<br>
-The DLLs needed for Windows are stored in the [`windll`](https://github.com/PQCraft/PlatinumSrc/tree/windll) branch
-<!----><br>
+<!---->A WIP Half Life 1 GoldSrc style 3D engine<br>
+---
+
+<!---->The DLLs needed for Windows are stored in the [`windll`](https://github.com/PQCraft/PlatinumSrc/tree/windll) branch
+---
+
 Progress (checked = done, <- = being worked on):<br>
 - [ ] Sound engine <-
   - [X] Music
