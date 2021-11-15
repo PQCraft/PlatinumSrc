@@ -16,14 +16,12 @@ Progress (checked = done, <- = being worked on):<br>
   - [ ] In-game UI rendering
   - [ ] 2D <-
     - [X] Shapes
-    - [ ] Coloring **<-**
+    - [X] Coloring **<-**
     - [ ] Texturing
   - [ ] 3D
     - [ ] Objects
-    - [ ] Coloring
     - [ ] Lighting
     - [ ] Shading
-    - [ ] Texturing
   - [ ] Objects
   - [ ] Loading alternate renderers from .so/.dll files
 - [ ] Game engine
