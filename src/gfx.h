@@ -17,8 +17,8 @@ typedef struct {
     psrc_coord_3d camrot;
     float posmult;
     float rotmult;
-    const char* vshader;
-    const char* fshader;
+    char* vshader;
+    char* fshader;
     void (*render)(void);
     void (*deinit)(void);
 } psrc_gfx;

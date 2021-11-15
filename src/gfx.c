@@ -54,6 +54,26 @@ void psrc_gfx_drawCube(float ox, float oy, float oz) {
     glEnd();
 }
 
+void psrc_gfx_setUniform1f(char* name, float val) {
+    int uHandle = glGetUniformLocation(psrc_gfx_glprog, name);
+    glUniform1f(uHandle, val);
+}
+
+void psrc_gfx_setUniform2f(char* name, float val[2]) {
+    int uHandle = glGetUniformLocation(psrc_gfx_glprog, name);
+    glUniform2f(uHandle, val[0], val[1]);
+}
+
+void psrc_gfx_setUniform3f(char* name, float val[3]) {
+    int uHandle = glGetUniformLocation(psrc_gfx_glprog, name);
+    glUniform3f(uHandle, val[0], val[1], val[2]);
+}
+
+void psrc_gfx_setUniform4f(char* name, float val[4]) {
+    int uHandle = glGetUniformLocation(psrc_gfx_glprog, name);
+    glUniform4f(uHandle, val[0], val[1], val[2], val[3]);
+}
+
 void psrc_gfx_render() {
     //glMatrixMode(GL_MODELVIEW);
     //glLoadIdentity();
@@ -70,6 +90,9 @@ void psrc_gfx_render() {
 }
 
 void psrc_gfx_deinit() {
+    free(psrc_gfx_struct.vshader);
+    free(psrc_gfx_struct.fshader);
+    glDeleteProgram(psrc_gfx_glprog);
     SDL_GL_DeleteContext(psrc_gfx_struct.context);
     SDL_DestroyWindow(psrc_gfx_struct.window);
 }
@@ -81,7 +104,8 @@ psrc_gfx* psrc_gfx_init() {
     noargv = malloc(sizeof(char*));
     noargv[0] = malloc(1);
     noargv[0][0] = 0;
-    psrc_gfx_struct = (psrc_gfx){640, 480, 0, 0, (psrc_coord_3d){0, 1, -4}, (psrc_coord_3d){0, 180, 0}, 0.1, 2, PSRC_GFX_VSHADER, PSRC_GFX_FSHADER, psrc_gfx_render, psrc_gfx_deinit};
+    psrc_gfx_struct = (psrc_gfx){640, 480, 0, 0, (psrc_coord_3d){0, 1, -4}, (psrc_coord_3d){0, 180, 0}, 0.1, 2,
+        psrc.getTextFile("shaders/vertex.glsl"), psrc.getTextFile("shaders/fragment.glsl"), psrc_gfx_render, psrc_gfx_deinit};
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         psrc.displayError(PSRC_ERR, "SDL_Init", (char*)SDL_GetError());
         return NULL;
@@ -112,7 +136,7 @@ psrc_gfx* psrc_gfx_init() {
     glClearColor(0, 0, 0.2, 0);
     glewInit();
     GLuint vertexHandle = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexHandle, 1, &psrc_gfx_struct.vshader, NULL);
+    glShaderSource(vertexHandle, 1, (const char* const*)&psrc_gfx_struct.vshader, NULL);
     glCompileShader(vertexHandle);
     GLint ret = GL_FALSE;
     glGetShaderiv(vertexHandle, GL_COMPILE_STATUS, &ret);
@@ -126,7 +150,7 @@ psrc_gfx* psrc_gfx_init() {
         free(log);
     }
     GLuint fragHandle = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragHandle, 1, &psrc_gfx_struct.fshader, NULL);
+    glShaderSource(fragHandle, 1, (const char* const*)&psrc_gfx_struct.fshader, NULL);
     glCompileShader(fragHandle);
     glGetShaderiv(fragHandle, GL_COMPILE_STATUS, &ret);
     if (!ret) {
@@ -155,10 +179,10 @@ psrc_gfx* psrc_gfx_init() {
     glDeleteShader(vertexHandle);
     glDeleteShader(fragHandle);
     float vertices[] = {
-         0.5f,  0.5f, 0.0f,  // top right
-         0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f,  // bottom left
-        -0.5f,  0.5f, 0.0f   // top left 
+         0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
+         0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f,
+        -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
+        -0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f
     };
     unsigned int indices[] = {  // note that we start from 0!
         0, 1, 3,  // first Triangle
@@ -173,8 +197,10 @@ psrc_gfx* psrc_gfx_init() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
+    glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

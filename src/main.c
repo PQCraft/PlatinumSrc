@@ -4,6 +4,14 @@
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include <limits.h>
+
+#ifndef MAX_PATH
+#define MAX_PATH 32768
+#endif
 
 psrc_main psrc;
 
@@ -29,6 +37,26 @@ float psrc_main_randfloat(float num1, float num2) {
     float range = num2 - num1;
     float div = RAND_MAX / range;
     return num1 + (rand() / div);
+}
+
+char* psrc_main_getTextFile(char* name) {
+    struct stat fnst;
+    stat(name, &fnst);
+    if (!S_ISREG(fnst.st_mode)) return NULL;
+    FILE* file = fopen(name, "r");
+    if (!file) return NULL;
+    fseek(file, 0, SEEK_END);
+    long int size = ftell(file);
+    char* data = malloc(size + 1);
+    fseek(file, 0, SEEK_SET);
+    long int i = 0;
+    while (i < size && !feof(file)) {
+        int tmpc = fgetc(file);
+        if (tmpc < 0) tmpc = 0;
+        data[i++] = (char)tmpc;
+    }
+    data[i] = 0;
+    return data;
 }
 
 char* psrc_main_getErrorText_text = NULL;
@@ -64,6 +92,43 @@ void psrc_main_displayError(int ecode, char* func, char* estr) {
     }
 }
 
+char* psrc_main_bfnbuf = NULL;
+
+char* psrc_main_basefilename(char* fn) {
+    int32_t fnlen = strlen(fn);
+    int32_t i;
+    for (i = fnlen; i > -1; --i) {
+        if (fn[i] == '/') break;
+        #ifdef _WIN32
+        if (fn[i] == '\\') break;
+        #endif
+    }
+    psrc_main_bfnbuf = realloc(psrc_main_bfnbuf, fnlen - i);
+    strcpy(psrc_main_bfnbuf, fn + i + 1);
+    printf("[%d]:{%s}\n", fnlen - i, psrc_main_bfnbuf);
+    //copyStrSnip(fn, i + 1, fnlen, psrc_main_bfnbuf);
+    return psrc_main_bfnbuf;
+}
+
+char* psrc_main_pathfilename(char* fn) {
+    int32_t fnlen = strlen(fn);
+    int32_t i;
+    for (i = fnlen; i > -1; --i) {
+        if (fn[i] == '/') break;
+        #ifdef _WIN32
+        if (fn[i] == '\\') break;
+        #endif
+    }
+    psrc_main_bfnbuf = realloc(psrc_main_bfnbuf, i + 2);
+    char tmp = fn[i + 1];
+    fn[i + 1] = 0;
+    strcpy(psrc_main_bfnbuf, fn);
+    fn[i + 1] = tmp;
+    printf("[%d]:{%s}\n", i + 2, psrc_main_bfnbuf);
+    //copyStrTo(fn, i + 1, psrc_main_bfnbuf);
+    return psrc_main_bfnbuf;
+}
+
 void psrc_main_cleanExit(int code) {
     free(psrc_main_getErrorText_text);
     if (psrc.sound && psrc.sound->deinit) psrc.sound->deinit();
@@ -79,14 +144,74 @@ void psrc_main_cleanExitSig(int sig) {
 
 void psrc_main_init() {
     signal(SIGINT, psrc_main_cleanExitSig);
-    psrc = (psrc_main){psrc_main_displayError, psrc_main_wait, psrc_main_utime, psrc_main_randfloat, NULL, NULL};
+    psrc = (psrc_main){psrc_main_displayError, psrc_main_wait, psrc_main_utime, psrc_main_randfloat, psrc_main_getTextFile, NULL, NULL};
     if (!(psrc.sound = psrc_sound_init())) psrc_main_cleanExit(1);
-    psrc.sound->playMusic("test.mp3");
+    psrc.sound->playMusic("sounds/test.mp3");
     if (!(psrc.gfx = psrc_gfx_init())) psrc_main_cleanExit(1);
 }
 
+char* psrc_startcmd = NULL;
+
 int main(int argc, char** argv) {
     (void)argc; (void)argv;
+    psrc_startcmd = malloc(MAX_PATH + 1);
+    #ifndef _WIN32
+        #ifndef __APPLE__
+            #ifndef __FreeBSD__
+                int32_t scsize;
+                if ((scsize = readlink("/proc/self/exe", psrc_startcmd, MAX_PATH)) == -1)
+                    #ifndef __linux__
+                    if ((scsize = readlink("/proc/curproc/file", psrc_startcmd, MAX_PATH)) == -1)
+                    #endif
+                        goto scargv;
+                psrc_startcmd[scsize] = 0;
+                psrc_startcmd = realloc(psrc_startcmd, scsize + 1);
+            #else
+                int mib[4];
+                mib[0] = CTL_KERN;
+                mib[1] = KERN_PROC;
+                mib[2] = KERN_PROC_PATHNAME;
+                mib[3] = -1;
+                size_t cb = CB_BUF_SIZE;
+                sysctl(mib, 4, psrc_startcmd, &cb, NULL, 0);
+                psrc_startcmd = realloc(psrc_startcmd, strlen(psrc_startcmd) + 1);
+                char* tmpstartcmd = realpath(psrc_startcmd, NULL);
+                swap(psrc_startcmd, tmpstartcmd);
+                nfree(tmpstartcmd);
+                psrc_startcmd = realloc(psrc_startcmd, strlen(psrc_startcmd) + 1);
+            #endif
+        #else
+            uint32_t tmpsize = CB_BUF_SIZE;
+            if (_NSGetExecutablePath(psrc_startcmd, &tmpsize)) {
+                goto scargv;
+            }
+            char* tmpstartcmd = realpath(psrc_startcmd, NULL);
+            swap(psrc_startcmd, tmpstartcmd);
+            nfree(tmpstartcmd);
+            psrc_startcmd = realloc(psrc_startcmd, strlen(psrc_startcmd) + 1);
+        #endif
+    #else
+        if (GetModuleFileName(NULL, psrc_startcmd, CB_BUF_SIZE)) {
+            psrc_startcmd = realloc(psrc_startcmd, strlen(psrc_startcmd) + 1);
+        } else {
+            goto scargv;
+        }
+    #endif
+    goto skipscargv;
+    scargv:;
+    free(psrc_startcmd);
+    if (strcmp(argv[0], psrc_main_basefilename(argv[0]))) {
+        #ifndef _WIN32
+        psrc_startcmd = realpath(argv[0], NULL);
+        #else
+        psrc_startcmd = _fullpath(NULL, argv[0], MAX_PATH);
+        #endif
+    } else {
+        psrc_startcmd = argv[0];
+    }
+    skipscargv:;
+    chdir(psrc_main_pathfilename(psrc_startcmd));
+    chdir("./resources/common/");
     psrc_main_init();
     psrc_main_cleanExit(0);
     return 0;

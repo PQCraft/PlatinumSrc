@@ -11,6 +11,7 @@ typedef struct {
     void (*wait)(uint64_t);
     uint64_t (*utime)(void);
     float (*randfloat)(float, float);
+    char* (*getTextFile)(char*);
     psrc_sound* sound;
     psrc_gfx* gfx;
 } psrc_main;
