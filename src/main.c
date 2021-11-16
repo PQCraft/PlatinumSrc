@@ -208,20 +208,20 @@ int main(int argc, char** argv) {
     chdir(psrc_main_pathfilename(psrc_startcmd));
     chdir("./resources/");
     psrc_main_init();
-    psrc.sound->playMusic("common/sounds/test.mp3");
+    //psrc.sound->playMusic("common/sounds/test.mp3");
     float vertices[] = {
         // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
+         0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // top right
+         0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // bottom right
+        -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f, // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f  // top left 
     };
     float vertices2[] = {
         // positions          // colors           // texture coords
-         0.7f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-        -0.7f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
+         0.8f,  0.8f, 0.1f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+         0.8f, -0.8f, 0.1f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+        -0.8f, -0.8f, 0.1f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+        -0.8f,  0.8f, 0.1f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
     };
     unsigned int indices[] = {
         0, 1, 3, // first triangle
@@ -230,10 +230,13 @@ int main(int argc, char** argv) {
     psrc_gfx_obj* testobj = psrc.gfx->newObj(PSRC_GFX_DEFAULT_COORD_3D, PSRC_GFX_DEFAULT_COORD_3D,
         vertices, sizeof(vertices), indices, sizeof(indices), "common/textures/crate.jpg");
     psrc_gfx_obj* testobj2 = psrc.gfx->newObj(PSRC_GFX_DEFAULT_COORD_3D, PSRC_GFX_DEFAULT_COORD_3D,
-        vertices2, sizeof(vertices2), indices, sizeof(indices), "common/textures/crate.jpg");
-    psrc.gfx->render(testobj);
-    psrc.gfx->render(testobj2);
-    while (!psrc.gfx->winQuit()) psrc.gfx->updateScreen();
+        vertices2, sizeof(vertices2), indices, sizeof(indices), "common/textures/brickwall.bmp");
+    while (!psrc.gfx->winQuit()) {
+        psrc.gfx->render(testobj);
+        psrc.gfx->render(testobj2);
+        psrc.gfx->updateScreen();
+        psrc.wait(1000000 / 60);
+    }
     psrc_main_cleanExit(0);
     return 0;
 }

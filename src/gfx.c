@@ -36,6 +36,7 @@ void psrc_gfx_setUniform4f(char* name, float val[4]) {
 }
 
 void psrc_gfx_render(psrc_gfx_obj* obj) {
+    if (!obj) return;
     glBindVertexArray(obj->VAO);
     glBindBuffer(GL_ARRAY_BUFFER, obj->VBO);
     glBufferData(GL_ARRAY_BUFFER, obj->vsize, obj->vertices, GL_STATIC_DRAW);
@@ -48,29 +49,25 @@ void psrc_gfx_render(psrc_gfx_obj* obj) {
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
     glBindTexture(GL_TEXTURE_2D, obj->texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glUniform1i(glGetUniformLocation(psrc_gfx_glprog, "texture1"), 0);
-    glUseProgram(psrc_gfx_glprog);
+    glUniform1i(glGetUniformLocation(psrc_gfx_glprog, "TexData"), 0);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
-    glfwSwapBuffers(psrc_gfx_struct.window);
-    glfwPollEvents();
 }
 
 void psrc_gfx_updateScreen() {
     glfwSwapBuffers(psrc_gfx_struct.window);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 bool psrc_gfx_winQuit() {glfwPollEvents(); return glfwWindowShouldClose(psrc_gfx_struct.window) || psrc.quitRequested;}
 
 psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, float* v, long unsigned int vs, unsigned int* i, long unsigned int is, char* t) {
-    struct stat pathstat;
-    if (stat(t, &pathstat)) return NULL;
+    int width, height, nrChannels;
+    unsigned char* data = stbi_load(t, &width, &height, &nrChannels, 0);
+    if (!data) data = stbi_load("base/textures/base.bmp", &width, &height, &nrChannels, 0);
+    if (!data) return NULL;
     psrc_gfx_obj* obj = malloc(sizeof(psrc_gfx_obj));
     memset(obj, 0, sizeof(psrc_gfx_obj));
     glGenVertexArrays(1, &obj->VAO);
@@ -84,9 +81,9 @@ psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, float* v, long u
     obj->indices = i;
     obj->isize = is;
     glBindTexture(GL_TEXTURE_2D, obj->texture);
-    int width, height, nrChannels;
-    unsigned char *data = stbi_load(t, &width, &height, &nrChannels, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glGenerateMipmap(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, 0);
     stbi_image_free(data);
@@ -123,7 +120,6 @@ psrc_gfx* psrc_gfx_init() {
     }
     glViewport(0, 0, psrc_gfx_struct.win_width, psrc_gfx_struct.win_height);
     glfwSetFramebufferSizeCallback(psrc_gfx_struct.window, psrc_gfx_winch);
-    #if 1
     GLuint vertexHandle = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexHandle, 1, (const GLchar * const*)&psrc_gfx_struct.vshader, NULL);
     glCompileShader(vertexHandle);
@@ -168,12 +164,15 @@ psrc_gfx* psrc_gfx_init() {
     glDeleteShader(vertexHandle);
     glDeleteShader(fragHandle);
     glUseProgram(psrc_gfx_glprog);
-    #endif
     stbi_set_flip_vertically_on_load(true);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glClearColor(0, 0, 0.2, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glfwSwapBuffers(psrc_gfx_struct.window);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glfwSwapBuffers(psrc_gfx_struct.window);
     glfwPollEvents();
     return &psrc_gfx_struct;
