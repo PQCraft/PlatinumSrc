@@ -2,7 +2,7 @@
 
 #include <SDL2/SDL_mixer.h>
 
-#define PSRC_MIX_INIT_ALL (MIX_INIT_FLAC | MIX_INIT_MOD | MIX_INIT_MP3 | MIX_INIT_OGG)
+#define PSRC_MIX_INIT_DEFAULT (MIX_INIT_FLAC | MIX_INIT_MP3 | MIX_INIT_OGG)
 
 Mix_Music* psrc_sound_music = NULL;
 psrc_sound psrc_sound_struct;
@@ -67,7 +67,7 @@ psrc_sound* psrc_sound_init() {
         psrc.displayError(PSRC_ERR, "SDL_Init", (char*)SDL_GetError());
         return NULL;
     }
-    if (Mix_Init(PSRC_MIX_INIT_ALL) != PSRC_MIX_INIT_ALL) {
+    if (Mix_Init(PSRC_MIX_INIT_DEFAULT) != PSRC_MIX_INIT_DEFAULT) {
         psrc.displayError(PSRC_ERR, "Mix_Init", (char*)Mix_GetError());
         return NULL;
     }

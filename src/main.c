@@ -39,27 +39,8 @@ float psrc_main_randfloat(float num1, float num2) {
     return num1 + (rand() / div);
 }
 
-char* psrc_main_getTextFile(char* name) {
-    struct stat fnst;
-    stat(name, &fnst);
-    if (!S_ISREG(fnst.st_mode)) return NULL;
-    FILE* file = fopen(name, "r");
-    if (!file) return NULL;
-    fseek(file, 0, SEEK_END);
-    long int size = ftell(file);
-    char* data = malloc(size + 1);
-    fseek(file, 0, SEEK_SET);
-    long int i = 0;
-    while (i < size && !feof(file)) {
-        int tmpc = fgetc(file);
-        if (tmpc < 0) tmpc = 0;
-        data[i++] = (char)tmpc;
-    }
-    data[i] = 0;
-    return data;
-}
-
 char* psrc_main_getErrorText_text = NULL;
+
 char* psrc_main_getErrorText(char* func, char* estr) {
     psrc_main_getErrorText_text = realloc(psrc_main_getErrorText_text, strlen(func) + strlen(estr) + 3);
     sprintf(psrc_main_getErrorText_text, "%s: %s", func, estr);
@@ -90,6 +71,33 @@ void psrc_main_displayError(int ecode, char* func, char* estr) {
             #endif
             break;
     }
+}
+
+char* psrc_main_getTextFile(char* name) {
+    struct stat fnst;
+    memset(&fnst, 0, sizeof(struct stat));
+    stat(name, &fnst);
+    if (!S_ISREG(fnst.st_mode)) {
+        psrc_main_displayError(PSRC_ERR, "psrc_main_getTextFile: Not a file", name);
+        return NULL;
+    }
+    FILE* file = fopen(name, "r");
+    if (!file) {
+        psrc_main_displayError(PSRC_ERR, "psrc_main_getTextFile: File not found", name);
+        return NULL;
+    }
+    fseek(file, 0, SEEK_END);
+    long int size = ftell(file);
+    char* data = malloc(size + 1);
+    fseek(file, 0, SEEK_SET);
+    long int i = 0;
+    while (i < size && !feof(file)) {
+        int tmpc = fgetc(file);
+        if (tmpc < 0) tmpc = 0;
+        data[i++] = (char)tmpc;
+    }
+    data[i] = 0;
+    return data;
 }
 
 char* psrc_main_bfnbuf = NULL;
@@ -206,34 +214,66 @@ int main(int argc, char** argv) {
     }
     skipscargv:;
     chdir(psrc_main_pathfilename(psrc_startcmd));
-    chdir("./resources/");
     psrc_main_init();
-    //psrc.sound->playMusic("common/sounds/test.mp3");
+    psrc.sound->playMusic("resources/common/music/walk_in_the_woods.mp3");
     float vertices[] = {
-        // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f, // top right
-         0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f, // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f  // top left 
-    };
-    float vertices2[] = {
-        // positions          // colors           // texture coords
-         0.8f,  0.8f, 0.1f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
-         0.8f, -0.8f, 0.1f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
-        -0.8f, -0.8f, 0.1f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
-        -0.8f,  0.8f, 0.1f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f
     };
     unsigned int indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
+        0, 1, 2,
+        1, 2, 3,
+        4, 5, 6,
+        5, 6, 7,
+        0, 1, 5,
+        0, 4, 5,
+        2, 3, 7,
+        2, 6, 7,
+        0, 2, 6,
+        0, 4, 6,
+        1, 5, 7,
+        1, 3, 7
     };
-    psrc_gfx_obj* testobj = psrc.gfx->newObj(PSRC_GFX_DEFAULT_COORD_3D, PSRC_GFX_DEFAULT_COORD_3D,
-        vertices, sizeof(vertices), indices, sizeof(indices), "common/textures/crate.jpg");
-    psrc_gfx_obj* testobj2 = psrc.gfx->newObj(PSRC_GFX_DEFAULT_COORD_3D, PSRC_GFX_DEFAULT_COORD_3D,
-        vertices2, sizeof(vertices2), indices, sizeof(indices), "common/textures/brickwall.bmp");
+    float vertices2[] = {
+         0.8f,  0.8f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
+         0.8f, -0.8f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
+        -0.8f, -0.8f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f
+    };
+    float vertices3[] = {
+         0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,
+        -0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,
+        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f
+    };
+    unsigned int indices2[] = {
+        0, 1, 3,
+        1, 2, 3
+    };
+    psrc_gfx_obj* testobj = psrc.gfx->newObj((psrc_coord_3d){0, 1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg");
+    psrc_gfx_obj* testobj2 = psrc.gfx->newObj((psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+        vertices2, sizeof(vertices2), indices2, sizeof(indices2), "resources/common/textures/brickwall.bmp");
+    psrc_gfx_obj* testobj3 = psrc.gfx->newObj((psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg");
+    psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
+        vertices3, sizeof(vertices3), indices2, sizeof(indices2), "resources/base/textures/base.bmp");
     while (!psrc.gfx->winQuit()) {
-        psrc.gfx->render(testobj);
-        psrc.gfx->render(testobj2);
+        psrc.gfx->test();
+        //testobj->rot.x = (float)glfwGetTime() * 90;
+        testobj->rot.y = (float)glfwGetTime() * 90;
+        testobj->rot.z = (float)glfwGetTime() * 90;
+        testobj2->rot.z = -(float)glfwGetTime() * 45;
+        psrc.gfx->renderObj(testobj);
+        psrc.gfx->renderObj(testobj2);
+        psrc.gfx->renderObj(testobj3);
+        psrc.gfx->renderObj(testobj4);
         psrc.gfx->updateScreen();
         psrc.wait(1000000 / 60);
     }
