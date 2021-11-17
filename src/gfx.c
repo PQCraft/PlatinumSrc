@@ -122,7 +122,7 @@ psrc_gfx_obj* psrc_gfx_newObj(int type, psrc_coord_3d p, psrc_coord_3d r, psrc_c
     unsigned char* data;
     if (t) {
         data = stbi_load(t, &width, &height, &nrChannels, 0);
-        if (!data) data = stbi_load("base/textures/base.bmp", &width, &height, &nrChannels, 0);
+        if (!data) data = stbi_load("resources/base/textures/base.bmp", &width, &height, &nrChannels, 0);
         if (!data) t = NULL;
     }
     psrc_gfx_obj* obj = malloc(sizeof(psrc_gfx_obj));
