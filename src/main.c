@@ -352,7 +352,7 @@ int main(int argc, char** argv) {
     psrc_gfx_obj* testobj = psrc.gfx->newObj(PSRC_GFX_OBJ_DEFAULT, (psrc_coord_3d){0, 1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
         vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg");
     psrc_gfx_obj* testobj2 = psrc.gfx->newObj(PSRC_GFX_OBJ_DEFAULT, (psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
-        vertices2, sizeof(vertices2), indices2, sizeof(indices2), "resources/common/textures/brickwall.bmp");
+        vertices2, sizeof(vertices2), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg");
     psrc_gfx_obj* testobj3 = psrc.gfx->newObj(PSRC_GFX_OBJ_DEFAULT, (psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
         vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg");
     psrc_gfx_obj* testobj4 = psrc.gfx->newObj(PSRC_GFX_OBJ_DEFAULT, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
