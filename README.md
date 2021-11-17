@@ -24,8 +24,8 @@ Progress (checked = done, <- = being worked on):<br>
     - [X] Shapes
     - [X] Coloring
     - [X] Texturing
-  - [ ] 3D **<-**
-    - [ ] Lighting
+  - [ ] 3D <-
+    - [ ] Lighting **<-**
     - [ ] Shading
   - [ ] Loading alternate renderers from .so/.dll files
 - [ ] Game engine
