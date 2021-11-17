@@ -12,17 +12,13 @@ typedef struct {
 } psrc_coord_3d;
 
 typedef struct {
-    float x;
-    float y;
-    float z;
-    float r;
-    float g;
-    float b;
-    float tx;
-    float ty;
-} psrc_point_3d;
+    unsigned int diffuse;
+    unsigned int specular;
+    float shine;
+} psrc_gfx_material;
 
 typedef struct {
+    int type;
     psrc_coord_3d pos;
     psrc_coord_3d rot;
     psrc_coord_3d scale;
@@ -43,10 +39,8 @@ typedef struct {
     psrc_coord_3d campos;
     psrc_coord_3d camrot;
     float camfov;
-    float posmult;
-    float rotmult;
-    char* vshader;
-    char* fshader;
+    GLuint objsprog;
+    GLuint lightsprog;
     void (*deinit)(void);
     psrc_gfx_obj* (*newObj)(int, psrc_coord_3d, psrc_coord_3d, psrc_coord_3d, float*, long unsigned int, unsigned int*, long unsigned int, char*);
     void (*renderObj)(psrc_gfx_obj*);
@@ -54,15 +48,16 @@ typedef struct {
     void (*updateCam)(void);
     int (*chkKey)(int);
     bool (*winQuit)(void);
-} psrc_gfx;
+} psrc_gfx_struct;
 
 #define PSRC_GFX_DEFAULT_POS (psrc_coord_3d){0, 0, 0}
 #define PSRC_GFX_DEFAULT_ROT (psrc_coord_3d){0, 0, 0}
 #define PSRC_GFX_DEFAULT_SCALE (psrc_coord_3d){1, 1, 1}
 #define PSRC_GFX_DEFAULT_MAT4 {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}
 
-#define PSRC_GFX_OBJ_LIGHT
+#define PSRC_GFX_OBJ_DEFAULT 0
+#define PSRC_GFX_OBJ_LIGHT 1
 
-psrc_gfx* psrc_gfx_init();
+psrc_gfx_struct* psrc_gfx_init();
 
 #endif

@@ -10,8 +10,8 @@ typedef struct {
     bool (*stopMusic)(void);
     bool (*waitStopMusic)(void);
     void (*deinit)(void);
-} psrc_sound;
+} psrc_sound_struct;
 
-psrc_sound* psrc_sound_init();
+psrc_sound_struct* psrc_sound_init();
 
 #endif

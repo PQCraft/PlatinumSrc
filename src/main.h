@@ -12,11 +12,11 @@ typedef struct {
     uint64_t (*utime)(void);
     float (*randfloat)(float, float);
     char* (*getTextFile)(char*);
-    psrc_sound* sound;
-    psrc_gfx* gfx;
+    psrc_sound_struct* sound;
+    psrc_gfx_struct* gfx;
     bool quitRequested;
-} psrc_main;
+} psrc_main_struct;
 
-extern psrc_main psrc;
+extern psrc_main_struct psrc;
 
 #endif

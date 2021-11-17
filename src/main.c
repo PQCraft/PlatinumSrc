@@ -13,7 +13,7 @@
 #define MAX_PATH 32768
 #endif
 
-psrc_main psrc;
+psrc_main_struct psrc;
 
 uint64_t psrc_main_utime() {
     struct timeval time1;
@@ -146,13 +146,6 @@ void psrc_main_cleanExitSig(int sig) {
     psrc.quitRequested = true;
 }
 
-void psrc_main_init() {
-    signal(SIGINT, psrc_main_cleanExitSig);
-    psrc = (psrc_main){psrc_main_displayError, psrc_main_wait, psrc_main_utime, psrc_main_randfloat, psrc_main_getTextFile, NULL, NULL, false};
-    if (!(psrc.sound = psrc_sound_init())) psrc_main_cleanExit(1);
-    if (!(psrc.gfx = psrc_gfx_init())) psrc_main_cleanExit(1);
-}
-
 float psrc_main_test_posmult = 0.25;
 float psrc_main_test_rotmult = 3;
 
@@ -215,6 +208,13 @@ void psrc_main_test() {
 
 char* psrc_startcmd = NULL;
 
+void psrc_main_init() {
+    signal(SIGINT, psrc_main_cleanExitSig);
+    psrc = (psrc_main_struct){psrc_main_displayError, psrc_main_wait, psrc_main_utime, psrc_main_randfloat, psrc_main_getTextFile, NULL, NULL, false};
+    if (!(psrc.sound = psrc_sound_init())) psrc_main_cleanExit(1);
+    if (!(psrc.gfx = psrc_gfx_init())) psrc_main_cleanExit(1);
+}
+
 int main(int argc, char** argv) {
     (void)argc; (void)argv;
     psrc_startcmd = malloc(MAX_PATH + 1);
@@ -273,57 +273,92 @@ int main(int argc, char** argv) {
         psrc_startcmd = argv[0];
     }
     skipscargv:;
-    chdir(psrc_main_pathfilename(psrc_startcmd));
     psrc_main_init();
-    psrc.sound->playMusic("resources/common/music/walk_in_the_woods.mp3");
+    if (chdir(psrc_main_pathfilename(psrc_startcmd))) {psrc.displayError(PSRC_ERR, "Fatal", "Could not find resources folder"); psrc_main_cleanExit(1);};
+    //psrc.sound->playMusic("resources/common/music/walk_in_the_woods.mp3");
     float vertices[] = {
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+
+        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f,  1.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
+
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f, -1.0f,  0.0f,
+
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  1.0f,  0.0f
     };
     unsigned int indices[] = {
-        0, 1, 2,
-        1, 2, 3,
-        4, 5, 6,
-        5, 6, 7,
-        0, 1, 5,
-        0, 4, 5,
-        2, 3, 7,
-        2, 6, 7,
-        0, 2, 6,
-        0, 4, 6,
-        1, 5, 7,
-        1, 3, 7
+         0,  1,  2,
+         3,  4,  5,
+         6,  7,  8,
+         9, 10, 11,
+        12, 13, 14,
+        15, 16, 17,
+        18, 19, 20,
+        21, 22, 23,
+        24, 25, 26,
+        27, 28, 29,
+        30, 31, 32,
+        33, 34, 35
     };
     float vertices2[] = {
-         0.8f,  0.8f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
-         0.8f, -0.8f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
-        -0.8f, -0.8f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
-        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f
+         0.8f,  0.8f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+         0.8f, -0.8f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f, -0.8f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,  0.0f,  0.0f, -1.0f
     };
     float vertices3[] = {
-         0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
-         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,
-        -0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,
-        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f
+         0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  0.0f,  0.0f, -1.0f
     };
     unsigned int indices2[] = {
         0, 1, 3,
         1, 2, 3
     };
-    psrc_gfx_obj* testobj = psrc.gfx->newObj((psrc_coord_3d){0, 1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+    psrc_gfx_obj* testobj = psrc.gfx->newObj(PSRC_GFX_OBJ_DEFAULT, (psrc_coord_3d){0, 1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
         vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg");
-    psrc_gfx_obj* testobj2 = psrc.gfx->newObj((psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+    psrc_gfx_obj* testobj2 = psrc.gfx->newObj(PSRC_GFX_OBJ_DEFAULT, (psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
         vertices2, sizeof(vertices2), indices2, sizeof(indices2), "resources/common/textures/brickwall.bmp");
-    psrc_gfx_obj* testobj3 = psrc.gfx->newObj((psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+    psrc_gfx_obj* testobj3 = psrc.gfx->newObj(PSRC_GFX_OBJ_DEFAULT, (psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
         vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg");
-    psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
+    psrc_gfx_obj* testobj4 = psrc.gfx->newObj(PSRC_GFX_OBJ_DEFAULT, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
         vertices3, sizeof(vertices3), indices2, sizeof(indices2), "resources/base/textures/base.bmp");
+    psrc_gfx_obj* testobj5 = psrc.gfx->newObj(PSRC_GFX_OBJ_LIGHT, (psrc_coord_3d){3, 2, 1.5}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0},
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/base/textures/base.bmp");
     float opm = psrc_main_test_posmult;
     float orm = psrc_main_test_rotmult;
     while (!psrc.gfx->winQuit()) {
@@ -333,10 +368,13 @@ int main(int argc, char** argv) {
         testobj->rot.y = (float)glfwGetTime() * 90;
         testobj->rot.z = (float)glfwGetTime() * 90;
         testobj2->rot.z = -(float)glfwGetTime() * 45;
+        testobj2->rot.x = -(float)glfwGetTime() * 90 * 360;
+        testobj5->pos = psrc.gfx->campos;
         psrc.gfx->renderObj(testobj);
         psrc.gfx->renderObj(testobj2);
         psrc.gfx->renderObj(testobj3);
         psrc.gfx->renderObj(testobj4);
+        psrc.gfx->renderObj(testobj5);
         psrc.gfx->updateScreen();
         uint64_t delayoffset = psrc.utime() - starttime;
         uint64_t delaytime = 1000000 / psrc.gfx->fps - delayoffset;
