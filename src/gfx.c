@@ -116,6 +116,7 @@ psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
     obj->vsize = vs;
     obj->indices = i;
     obj->isize = is;
+    obj->trict = is / sizeof(*indices);
     if (t) {
         glGenTextures(1, &obj->texture);
         glBindTexture(GL_TEXTURE_2D, obj->texture);

@@ -48,7 +48,7 @@ typedef struct {
     char* vshader;
     char* fshader;
     void (*deinit)(void);
-    psrc_gfx_obj* (*newObj)(psrc_coord_3d, psrc_coord_3d, psrc_coord_3d, float*, long unsigned int, unsigned int*, long unsigned int, char*);
+    psrc_gfx_obj* (*newObj)(int, psrc_coord_3d, psrc_coord_3d, psrc_coord_3d, float*, long unsigned int, unsigned int*, long unsigned int, char*);
     void (*renderObj)(psrc_gfx_obj*);
     void (*updateScreen)(void);
     void (*updateCam)(void);
@@ -60,6 +60,8 @@ typedef struct {
 #define PSRC_GFX_DEFAULT_ROT (psrc_coord_3d){0, 0, 0}
 #define PSRC_GFX_DEFAULT_SCALE (psrc_coord_3d){1, 1, 1}
 #define PSRC_GFX_DEFAULT_MAT4 {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}
+
+#define PSRC_GFX_OBJ_LIGHT
 
 psrc_gfx* psrc_gfx_init();
 
