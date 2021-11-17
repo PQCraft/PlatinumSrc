@@ -6,8 +6,8 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
 #include <limits.h>
+#include <GLFW/glfw3.h>
 
 #ifndef MAX_PATH
 #define MAX_PATH 32768
@@ -153,6 +153,66 @@ void psrc_main_init() {
     if (!(psrc.gfx = psrc_gfx_init())) psrc_main_cleanExit(1);
 }
 
+float psrc_main_test_posmult = 0.25;
+float psrc_main_test_rotmult = 3;
+
+void psrc_main_test() {
+    float pmult = psrc_main_test_posmult;
+    float rmult = psrc_main_test_rotmult;
+    if (psrc.gfx->chkKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || psrc.gfx->chkKey(GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {
+        psrc.gfx->campos.y = 0.75;
+        pmult /= 2;
+    } else {
+        psrc.gfx->campos.y = 1.5;
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_LEFT_ALT) == GLFW_PRESS || psrc.gfx->chkKey(GLFW_KEY_RIGHT_ALT) == GLFW_PRESS) {
+        psrc.gfx->camfov = 10;
+        pmult /= 2;
+        rmult /= 3;
+    } else {
+        psrc.gfx->camfov = 50;
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_W) == GLFW_PRESS) {
+        float yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
+        psrc.gfx->campos.x += sinf(yrotrad) * pmult;
+        psrc.gfx->campos.z -= cosf(yrotrad) * pmult;
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_S) == GLFW_PRESS) {
+        float yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
+        psrc.gfx->campos.x -= sinf(yrotrad) * pmult;
+        psrc.gfx->campos.z += cosf(yrotrad) * pmult;
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_A) == GLFW_PRESS) {
+        float yrotrad;
+        yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
+        psrc.gfx->campos.x -= cosf(yrotrad) * pmult;
+        psrc.gfx->campos.z -= sinf(yrotrad) * pmult;
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_D) == GLFW_PRESS) {
+        float yrotrad;
+        yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
+        psrc.gfx->campos.x += cosf(yrotrad) * pmult;
+        psrc.gfx->campos.z += sinf(yrotrad) * pmult;
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_UP) == GLFW_PRESS) {
+        if (psrc.gfx->camrot.x < 90 - rmult) psrc.gfx->camrot.x += rmult;
+        else {psrc.gfx->camrot.x = 89.999;}
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_DOWN) == GLFW_PRESS) {
+        if (psrc.gfx->camrot.x > -90 + rmult) psrc.gfx->camrot.x -= rmult;
+        else {psrc.gfx->camrot.x = -89.999;}
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_LEFT) == GLFW_PRESS) {
+        psrc.gfx->camrot.y -= rmult;
+        if (psrc.gfx->camrot.y < -360) psrc.gfx->camrot.y += 360;
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        psrc.gfx->camrot.y += rmult;
+        if (psrc.gfx->camrot.y > 360) psrc.gfx->camrot.y -= 360;
+    }
+    psrc.gfx->updateCam();
+}
+
 char* psrc_startcmd = NULL;
 
 int main(int argc, char** argv) {
@@ -217,14 +277,14 @@ int main(int argc, char** argv) {
     psrc_main_init();
     psrc.sound->playMusic("resources/common/music/walk_in_the_woods.mp3");
     float vertices[] = {
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
          0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
          0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f
+        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f
     };
     unsigned int indices[] = {
         0, 1, 2,
@@ -264,9 +324,12 @@ int main(int argc, char** argv) {
         vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg");
     psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
         vertices3, sizeof(vertices3), indices2, sizeof(indices2), "resources/base/textures/base.bmp");
+    float opm = psrc_main_test_posmult;
+    float orm = psrc_main_test_rotmult;
     while (!psrc.gfx->winQuit()) {
-        psrc.gfx->test();
-        //testobj->rot.x = (float)glfwGetTime() * 90;
+        uint64_t starttime = psrc.utime();
+        psrc_main_test();
+        testobj->rot.x = (float)glfwGetTime() * 90;
         testobj->rot.y = (float)glfwGetTime() * 90;
         testobj->rot.z = (float)glfwGetTime() * 90;
         testobj2->rot.z = -(float)glfwGetTime() * 45;
@@ -275,7 +338,12 @@ int main(int argc, char** argv) {
         psrc.gfx->renderObj(testobj3);
         psrc.gfx->renderObj(testobj4);
         psrc.gfx->updateScreen();
-        psrc.wait(1000000 / 60);
+        uint64_t delayoffset = psrc.utime() - starttime;
+        uint64_t delaytime = 1000000 / psrc.gfx->fps - delayoffset;
+        if (delaytime < 1000000 / psrc.gfx->fps) psrc.wait(delaytime);
+        float fpsmult = (float)(psrc.utime() - starttime) / (1000000.0f / 60.0f);
+        psrc_main_test_posmult = opm * fpsmult;
+        psrc_main_test_rotmult = orm * fpsmult;
     }
     psrc_main_cleanExit(0);
     return 0;

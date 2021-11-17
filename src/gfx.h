@@ -36,9 +36,9 @@ typedef struct {
 } psrc_gfx_obj;
 
 typedef struct {
-    int win_width;
-    int win_height;
-    int fps;
+    unsigned int win_width;
+    unsigned int win_height;
+    unsigned int fps;
     GLFWwindow* window;
     psrc_coord_3d campos;
     psrc_coord_3d camrot;
@@ -52,7 +52,7 @@ typedef struct {
     void (*renderObj)(psrc_gfx_obj*);
     void (*updateScreen)(void);
     void (*updateCam)(void);
-    void (*test)(void);
+    int (*chkKey)(int);
     bool (*winQuit)(void);
 } psrc_gfx;
 

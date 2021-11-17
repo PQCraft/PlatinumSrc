@@ -141,57 +141,14 @@ void psrc_gfx_winch(GLFWwindow* win, int w, int h) {
     if (win == psrc_gfx_struct.window) glViewport(0, 0, w, h);
 }
 
-void psrc_gfx_test() {
-    float pmult = psrc_gfx_struct.posmult;
-    if (glfwGetKey(psrc_gfx_struct.window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(psrc_gfx_struct.window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {
-        psrc_gfx_struct.campos.y = 0.75;
-        pmult /= 2;
-    } else {
-        psrc_gfx_struct.campos.y = 1.5;
-    }
-    if (glfwGetKey(psrc_gfx_struct.window, GLFW_KEY_W) == GLFW_PRESS) {
-        float yrotrad = (psrc_gfx_struct.camrot.y / 180 * M_PI);
-        psrc_gfx_struct.campos.x += sinf(yrotrad) * pmult;
-        psrc_gfx_struct.campos.z -= cosf(yrotrad) * pmult;
-    }
-    if (glfwGetKey(psrc_gfx_struct.window, GLFW_KEY_S) == GLFW_PRESS) {
-        float yrotrad = (psrc_gfx_struct.camrot.y / 180 * M_PI);
-        psrc_gfx_struct.campos.x -= sinf(yrotrad) * pmult;
-        psrc_gfx_struct.campos.z += cosf(yrotrad) * pmult;
-    }
-    if (glfwGetKey(psrc_gfx_struct.window, GLFW_KEY_A) == GLFW_PRESS) {
-        float yrotrad;
-        yrotrad = (psrc_gfx_struct.camrot.y / 180 * M_PI);
-        psrc_gfx_struct.campos.x -= cosf(yrotrad) * pmult;
-        psrc_gfx_struct.campos.z -= sinf(yrotrad) * pmult;
-    }
-    if (glfwGetKey(psrc_gfx_struct.window, GLFW_KEY_D) == GLFW_PRESS) {
-        float yrotrad;
-        yrotrad = (psrc_gfx_struct.camrot.y / 180 * M_PI);
-        psrc_gfx_struct.campos.x += cosf(yrotrad) * pmult;
-        psrc_gfx_struct.campos.z += sinf(yrotrad) * pmult;
-    }
-    if (glfwGetKey(psrc_gfx_struct.window, GLFW_KEY_UP) == GLFW_PRESS) {
-        if (psrc_gfx_struct.camrot.x < 90 - psrc_gfx_struct.rotmult) psrc_gfx_struct.camrot.x += psrc_gfx_struct.rotmult;
-    }
-    if (glfwGetKey(psrc_gfx_struct.window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        if (psrc_gfx_struct.camrot.x > -90 + psrc_gfx_struct.rotmult) psrc_gfx_struct.camrot.x -= psrc_gfx_struct.rotmult;
-    }
-    if (glfwGetKey(psrc_gfx_struct.window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        psrc_gfx_struct.camrot.y -= psrc_gfx_struct.rotmult;
-        if (psrc_gfx_struct.camrot.y < -360) psrc_gfx_struct.camrot.y += 360;
-    }
-    if (glfwGetKey(psrc_gfx_struct.window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        psrc_gfx_struct.camrot.y += psrc_gfx_struct.rotmult;
-        if (psrc_gfx_struct.camrot.y > 360) psrc_gfx_struct.camrot.y -= 360;
-    }
-    psrc_gfx_updateCam();
+int psrc_gfx_chkKey(int key) {
+    return glfwGetKey(psrc_gfx_struct.window, key);
 }
 
 psrc_gfx* psrc_gfx_init() {
-    psrc_gfx_struct = (psrc_gfx){640, 480, 60, NULL, (psrc_coord_3d){0, 0, -4}, (psrc_coord_3d){0, 180, 0}, 50, 0.25, 3,
+    psrc_gfx_struct = (psrc_gfx){640, 480, 120, NULL, (psrc_coord_3d){0, 0, -4}, (psrc_coord_3d){0, 180, 0}, 50, 0.25, 3,
         psrc.getTextFile("resources/base/shaders/vertex.glsl"), psrc.getTextFile("resources/base/shaders/fragment.glsl"),
-        psrc_gfx_deinit, psrc_gfx_newObj, psrc_gfx_renderObj, psrc_gfx_updateScreen, psrc_gfx_updateCam, psrc_gfx_test, psrc_gfx_winQuit};
+        psrc_gfx_deinit, psrc_gfx_newObj, psrc_gfx_renderObj, psrc_gfx_updateScreen, psrc_gfx_updateCam, psrc_gfx_chkKey, psrc_gfx_winQuit};
     if (!psrc_gfx_struct.vshader || !psrc_gfx_struct.fshader) return NULL;
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
