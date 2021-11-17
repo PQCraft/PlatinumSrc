@@ -62,9 +62,6 @@ void psrc_gfx_updateCam() {
 
 void psrc_gfx_renderObj(psrc_gfx_obj* obj) {
     if (!obj) return;
-    psrc_gfx_setUniform1i(psrc_gfx.objsprog, "objType", 0);
-    psrc_gfx_setUniform3f(psrc_gfx.objsprog, "lightColor", (float[]){1, 1, 1});
-    psrc_gfx_setUniform3f(psrc_gfx.objsprog, "lightPos", (float[]){psrc_gfx.campos.x, psrc_gfx.campos.y, psrc_gfx.campos.z});
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, "material.shine", obj->material.shine);
     glBindVertexArray(obj->VAO);
     glBindBuffer(GL_ARRAY_BUFFER, obj->VBO);
@@ -145,7 +142,7 @@ psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
 }
 
 psrc_gfx_light psrc_gfx_lightstack[256];
-int psrc_gfx_lightmaxct = 1;
+int psrc_gfx_lightmaxct = 256;
 int psrc_gfx_lightstackp = 0;
 
 void psrc_gfx_updateLight(int i) {
@@ -159,6 +156,7 @@ void psrc_gfx_updateLight(int i) {
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sdiffuse", elem), (float[]){light->diffuse.r, light->diffuse.g, light->diffuse.b});
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sspecular", elem), (float[]){light->specular.r, light->specular.g, light->specular.b});
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sdirection", elem), (float[]){light->direction.x, light->direction.y, light->direction.z});
+    psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%srange", elem), light->range);
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%sconstant", elem), light->constant);
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%slinear", elem), light->linear);
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%squadratic", elem), light->quadratic);
@@ -253,7 +251,7 @@ bool psrc_gfx_makeShaderProg(char* vs, char* fs, GLuint* p) {
 
 psrc_gfx_struct* psrc_gfx_init() {
     psrc_gfx = (psrc_gfx_struct){640, 480, 0, NULL, (psrc_coord_3d){0, 0, -4}, (psrc_coord_3d){0, 180, 0}, 50, 0, 0,
-        psrc_gfx_deinit, psrc_gfx_newObj, psrc_gfx_renderObj,
+        psrc_gfx_deinit, psrc_gfx_newObj, psrc_gfx_renderObj, psrc_gfx_getLight, psrc_gfx_getNextLight, psrc_gfx_updateLight,
         psrc_gfx_updateScreen, psrc_gfx_updateCam, psrc_gfx_chkKey, psrc_gfx_winQuit};
     if (psrc_gfx.fps == 0) {psrc_gfx.fps = 32767;}
     glfwInit();
@@ -273,8 +271,10 @@ psrc_gfx_struct* psrc_gfx_init() {
     }
     glViewport(0, 0, psrc_gfx.win_width, psrc_gfx.win_height);
     glfwSetFramebufferSizeCallback(psrc_gfx.window, psrc_gfx_winch);
+    for (int i = 0; i < 256; ++i) {
+        psrc_gfx_lightstack[i].id = i;
+    }
     if (!psrc_gfx_makeShaderProg("resources/base/shaders/vertex.glsl", "resources/base/shaders/fragment.glsl", &psrc_gfx.objsprog)) return NULL;
-    //if (!psrc_gfx_makeShaderProg("resources/base/shaders/vertex_light.glsl", "resources/base/shaders/fragment_light.glsl", &psrc_gfx.lightsprog)) return NULL;
     glUseProgram(psrc_gfx.objsprog);
     psrc_gfx_aspect = (float)psrc_gfx.win_width / (float)psrc_gfx.win_height;
     stbi_set_flip_vertically_on_load(true);
@@ -282,17 +282,11 @@ psrc_gfx_struct* psrc_gfx_init() {
     glDepthFunc(GL_LESS);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glClearColor(0, 0, 0.2, 1);
+    glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glfwSwapBuffers(psrc_gfx.window);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glfwSwapBuffers(psrc_gfx.window);
     glfwPollEvents();
-    psrc_gfx_lightstack[0].type = 1;
-    psrc_gfx_lightstack[0].pos = psrc_gfx.campos;
-    psrc_gfx_lightstack[0].ambient = (psrc_color){0.2, 0.25, 0.2};
-    psrc_gfx_lightstack[0].diffuse = (psrc_color){0.75, 1, 0.75};
-    psrc_gfx_lightstack[0].specular = (psrc_color){1, 1, 0.75};
-    psrc_gfx_updateLight(0);
     return &psrc_gfx;
 }

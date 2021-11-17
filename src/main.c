@@ -345,9 +345,9 @@ int main(int argc, char** argv) {
     };
     float vertices2[] = {
          0.8f,  0.8f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
-         0.8f, -0.8f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-        -0.8f, -0.8f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,  0.0f,  0.0f, -1.0f
+         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 0.0f,   1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f, -0.8f, 0.0f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f,  0.8f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,  0.0f,  0.0f, -1.0f
     };
     float vertices3[] = {
          0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
@@ -367,13 +367,27 @@ int main(int argc, char** argv) {
         vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16);
     psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
         vertices3, sizeof(vertices3), indices2, sizeof(indices2), "resources/base/textures/base.bmp", 256);
-    psrc_gfx_obj* testobj5 = psrc.gfx->newObj((psrc_coord_3d){0, 0.75, -2}, (psrc_coord_3d){45, 0, 0}, (psrc_coord_3d){2, 2, 2},
+    psrc_gfx_obj* testobj5 = psrc.gfx->newObj((psrc_coord_3d){0, 0.75, 4}, (psrc_coord_3d){45, 0, 0}, (psrc_coord_3d){2, 2, 2},
         vertices3, sizeof(vertices3), indices2, sizeof(indices2), NULL, 256);
+    psrc_gfx_light* camlight = psrc.gfx->getNextLight();
+    camlight->type = 1;
+    camlight->range = 0.5;
+    camlight->diffuse = (psrc_color){0.75, 0.8, 0.75};
+    camlight->specular = (psrc_color){0.7, 0.8, 0.7};
+    psrc_gfx_light* ambientlight = psrc.gfx->getNextLight();
+    ambientlight->type = 1;
+    ambientlight->range = 1;
+    ambientlight->ambient = (psrc_color){0, 0, 0};
+    ambientlight->diffuse = (psrc_color){0.0, 0.0, 0.0};
+    ambientlight->specular = (psrc_color){0.0, 0.0, 0.0};
+    psrc.gfx->updateLight(ambientlight->id);
     float opm = psrc_main_test_posmult;
     float orm = psrc_main_test_rotmult;
     while (!psrc.gfx->winQuit()) {
         uint64_t starttime = psrc.utime();
         psrc_main_test();
+        camlight->pos = psrc.gfx->campos;
+        psrc.gfx->updateLight(camlight->id);
         testobj->rot.x = (float)glfwGetTime() * 90;
         testobj->rot.y = (float)glfwGetTime() * 90;
         testobj->rot.z = (float)glfwGetTime() * 90;

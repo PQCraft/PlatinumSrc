@@ -38,12 +38,14 @@ typedef struct {
 } psrc_gfx_obj;
 
 typedef struct {
+    int id;
     int type;
     psrc_coord_3d pos;
     psrc_color ambient;
     psrc_color diffuse;
     psrc_color specular;       
     psrc_coord_3d direction;
+    float range;
     float constant;
     float linear;
     float quadratic;
@@ -64,6 +66,9 @@ typedef struct {
     void (*deinit)(void);
     psrc_gfx_obj* (*newObj)(psrc_coord_3d, psrc_coord_3d, psrc_coord_3d, float*, long unsigned int, unsigned int*, long unsigned int, char*, float);
     void (*renderObj)(psrc_gfx_obj*);
+    psrc_gfx_light* (*getLight)(int);
+    psrc_gfx_light* (*getNextLight)(void);
+    void (*updateLight)(int);
     void (*updateScreen)(void);
     void (*updateCam)(void);
     int (*chkKey)(int);
@@ -76,9 +81,10 @@ typedef struct {
 #define PSRC_GFX_DEFAULT_MAT4 {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}
 
 #define PSRC_GFX_LIGHT_DISABLED (0)
-#define PSRC_GFX_LIGHT_DIRECTION (1)
-#define PSRC_GFX_LIGHT_POINT (2)
-#define PSRC_GFX_LIGHT_SPOT (3)
+#define PSRC_GFX_LIGHT_DEFAULT (1)
+#define PSRC_GFX_LIGHT_DIRECTION (2)
+#define PSRC_GFX_LIGHT_POINT (3)
+#define PSRC_GFX_LIGHT_SPOT (4)
 
 psrc_gfx_struct* psrc_gfx_init();
 

@@ -9,6 +9,7 @@ struct light_struct {
     vec3 diffuse;
     vec3 specular;       
     vec3 direction;
+    float range;
     float constant;
     float linear;
     float quadratic;
@@ -37,40 +38,34 @@ uniform int lightmaxct;
 uniform light_struct light[256];
 uniform material_struct material;
 
-uniform int objType;
-
 vec3 calcLight(int i)
 {
     vec3 ambient = light[i].ambient;
     vec3 norm = normalize(Normal);
+    float dist = 1 / mix(abs(distance(light[i].position, FragPos) + 1), 1, light[i].range);
     vec3 lightDir = normalize(light[i].position - FragPos);
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diff * light[i].diffuse;
     float specularStrength = 0.5;
     vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);  
+    vec3 reflectDir = reflect(-lightDir, norm);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shine);
     vec3 specular = specularStrength * spec * light[i].specular * (material.shine / 256);
-    return (ambient + diffuse + specular) * CurColor;
+    return (ambient + diffuse + specular) * CurColor * dist;
 }
 
 void main()
 {
-    if (objType == 1) {
-        FragColor = vec4(1.0);
-    } else {
-        vec3 result;
-        result.r = 0;
-        result.g = 0;
-        result.b = 0;
-        for (int i = 0; i < lightmaxct; ++i) {
-            result += calcLight(i);
-        }
-        if (HasTex != 0) {
-            FragColor = (texture(TexData, TexCoord) + (material.shine / 4096)) * vec4(result, 1.0);
-        } else {
-            FragColor = vec4(result, 1.0);
-        }
+    vec3 result;
+    result.r = 0;
+    result.g = 0;
+    result.b = 0;
+    for (int i = 0; i < lightmaxct; ++i) {
+        if (light[i].type != 0) result += calcLight(i);
+    }
+    FragColor = vec4(result, 1.0);
+    if (HasTex != 0) {
+        FragColor *= (texture(TexData, TexCoord) + (material.shine / 4096));
     }
 }
 
