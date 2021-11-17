@@ -12,13 +12,18 @@ typedef struct {
 } psrc_coord_3d;
 
 typedef struct {
+    float r;
+    float g;
+    float b;
+} psrc_color;
+
+typedef struct {
     unsigned int diffuse;
     unsigned int specular;
     float shine;
 } psrc_gfx_material;
 
 typedef struct {
-    int type;
     psrc_coord_3d pos;
     psrc_coord_3d rot;
     psrc_coord_3d scale;
@@ -29,7 +34,22 @@ typedef struct {
     long unsigned int isize;
     unsigned int VBO, VAO, EBO;
     unsigned int texture;
+    psrc_gfx_material material;
 } psrc_gfx_obj;
+
+typedef struct {
+    int type;
+    psrc_coord_3d pos;
+    psrc_color ambient;
+    psrc_color diffuse;
+    psrc_color specular;       
+    psrc_coord_3d direction;
+    float constant;
+    float linear;
+    float quadratic;
+    float cutOff;
+    float outerCutOff;
+} psrc_gfx_light;
 
 typedef struct {
     unsigned int win_width;
@@ -42,7 +62,7 @@ typedef struct {
     GLuint objsprog;
     GLuint lightsprog;
     void (*deinit)(void);
-    psrc_gfx_obj* (*newObj)(int, psrc_coord_3d, psrc_coord_3d, psrc_coord_3d, float*, long unsigned int, unsigned int*, long unsigned int, char*);
+    psrc_gfx_obj* (*newObj)(psrc_coord_3d, psrc_coord_3d, psrc_coord_3d, float*, long unsigned int, unsigned int*, long unsigned int, char*, float);
     void (*renderObj)(psrc_gfx_obj*);
     void (*updateScreen)(void);
     void (*updateCam)(void);
@@ -55,8 +75,10 @@ typedef struct {
 #define PSRC_GFX_DEFAULT_SCALE (psrc_coord_3d){1, 1, 1}
 #define PSRC_GFX_DEFAULT_MAT4 {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}
 
-#define PSRC_GFX_OBJ_DEFAULT 0
-#define PSRC_GFX_OBJ_LIGHT 1
+#define PSRC_GFX_LIGHT_DISABLED (0)
+#define PSRC_GFX_LIGHT_DIRECTION (1)
+#define PSRC_GFX_LIGHT_POINT (2)
+#define PSRC_GFX_LIGHT_SPOT (3)
 
 psrc_gfx_struct* psrc_gfx_init();
 

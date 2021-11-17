@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <limits.h>
-#include <GLFW/glfw3.h>
+#include <math.h>
 
 #ifndef MAX_PATH
 #define MAX_PATH 32768
@@ -206,11 +206,21 @@ void psrc_main_test() {
     psrc.gfx->updateCam();
 }
 
+char psrc_main_getFTextBuf[32768];
+
+char* psrc_main_getFText(char* f, ...) {
+    va_list a;
+    va_start(a, f);
+    vsprintf(psrc_main_getFTextBuf, f, a);
+    va_end(a);
+    return psrc_main_getFTextBuf;
+}
+
 char* psrc_startcmd = NULL;
 
 void psrc_main_init() {
     signal(SIGINT, psrc_main_cleanExitSig);
-    psrc = (psrc_main_struct){psrc_main_displayError, psrc_main_wait, psrc_main_utime, psrc_main_randfloat, psrc_main_getTextFile, NULL, NULL, false};
+    psrc = (psrc_main_struct){psrc_main_displayError, psrc_main_wait, psrc_main_utime, psrc_main_randfloat, psrc_main_getTextFile, psrc_main_getFText, NULL, NULL, false};
     if (!(psrc.sound = psrc_sound_init())) psrc_main_cleanExit(1);
     if (!(psrc.gfx = psrc_gfx_init())) psrc_main_cleanExit(1);
 }
@@ -235,7 +245,7 @@ int main(int argc, char** argv) {
                 mib[1] = KERN_PROC;
                 mib[2] = KERN_PROC_PATHNAME;
                 mib[3] = -1;
-                size_t cb = CB_BUF_SIZE;
+                size_t cb = MAX_PATH;
                 sysctl(mib, 4, psrc_startcmd, &cb, NULL, 0);
                 psrc_startcmd = realloc(psrc_startcmd, strlen(psrc_startcmd) + 1);
                 char* tmpstartcmd = realpath(psrc_startcmd, NULL);
@@ -244,7 +254,7 @@ int main(int argc, char** argv) {
                 psrc_startcmd = realloc(psrc_startcmd, strlen(psrc_startcmd) + 1);
             #endif
         #else
-            uint32_t tmpsize = CB_BUF_SIZE;
+            uint32_t tmpsize = MAX_PATH;
             if (_NSGetExecutablePath(psrc_startcmd, &tmpsize)) {
                 goto scargv;
             }
@@ -254,7 +264,7 @@ int main(int argc, char** argv) {
             psrc_startcmd = realloc(psrc_startcmd, strlen(psrc_startcmd) + 1);
         #endif
     #else
-        if (GetModuleFileName(NULL, psrc_startcmd, CB_BUF_SIZE)) {
+        if (GetModuleFileName(NULL, psrc_startcmd, MAX_PATH)) {
             psrc_startcmd = realloc(psrc_startcmd, strlen(psrc_startcmd) + 1);
         } else {
             goto scargv;
@@ -349,16 +359,16 @@ int main(int argc, char** argv) {
         0, 1, 3,
         1, 2, 3
     };
-    psrc_gfx_obj* testobj = psrc.gfx->newObj(PSRC_GFX_OBJ_DEFAULT, (psrc_coord_3d){0, 1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
-        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg");
-    psrc_gfx_obj* testobj2 = psrc.gfx->newObj(PSRC_GFX_OBJ_DEFAULT, (psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
-        vertices2, sizeof(vertices2), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg");
-    psrc_gfx_obj* testobj3 = psrc.gfx->newObj(PSRC_GFX_OBJ_DEFAULT, (psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
-        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg");
-    psrc_gfx_obj* testobj4 = psrc.gfx->newObj(PSRC_GFX_OBJ_DEFAULT, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
-        vertices3, sizeof(vertices3), indices2, sizeof(indices2), "resources/base/textures/base.bmp");
-    psrc_gfx_obj* testobj5 = psrc.gfx->newObj(PSRC_GFX_OBJ_LIGHT, (psrc_coord_3d){3, 2, 1.5}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0},
-        vertices, sizeof(vertices), indices, sizeof(indices), "resources/base/textures/base.bmp");
+    psrc_gfx_obj* testobj = psrc.gfx->newObj((psrc_coord_3d){0, 1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg", 256);
+    psrc_gfx_obj* testobj2 = psrc.gfx->newObj((psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){2, 2, 2},
+        vertices2, sizeof(vertices2), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg", 256);
+    psrc_gfx_obj* testobj3 = psrc.gfx->newObj((psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16);
+    psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
+        vertices3, sizeof(vertices3), indices2, sizeof(indices2), "resources/base/textures/base.bmp", 256);
+    psrc_gfx_obj* testobj5 = psrc.gfx->newObj((psrc_coord_3d){0, 0.75, -2}, (psrc_coord_3d){45, 0, 0}, (psrc_coord_3d){2, 2, 2},
+        vertices3, sizeof(vertices3), indices2, sizeof(indices2), NULL, 256);
     float opm = psrc_main_test_posmult;
     float orm = psrc_main_test_rotmult;
     while (!psrc.gfx->winQuit()) {
@@ -368,8 +378,6 @@ int main(int argc, char** argv) {
         testobj->rot.y = (float)glfwGetTime() * 90;
         testobj->rot.z = (float)glfwGetTime() * 90;
         testobj2->rot.z = -(float)glfwGetTime() * 45;
-        testobj2->rot.x = -(float)glfwGetTime() * 90 * 360;
-        testobj5->pos = psrc.gfx->campos;
         psrc.gfx->renderObj(testobj);
         psrc.gfx->renderObj(testobj2);
         psrc.gfx->renderObj(testobj3);

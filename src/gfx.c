@@ -62,20 +62,10 @@ void psrc_gfx_updateCam() {
 
 void psrc_gfx_renderObj(psrc_gfx_obj* obj) {
     if (!obj) return;
-    GLuint sprog = 0;
-    switch (obj->type) {
-        default:;
-            sprog = psrc_gfx.objsprog;
-            break;
-        case PSRC_GFX_OBJ_LIGHT:;
-            //sprog = psrc_gfx.lightsprog;
-            psrc_gfx_setUniform3f(psrc_gfx.objsprog, "lightPos", (float[]){obj->pos.x, obj->pos.y, obj->pos.z});
-            sprog = psrc_gfx.objsprog;
-            break;
-    }
-    glUseProgram(sprog);
-    psrc_gfx_setUniform1i(sprog, "objType", obj->type);
+    psrc_gfx_setUniform1i(psrc_gfx.objsprog, "objType", 0);
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, "lightColor", (float[]){1, 1, 1});
+    psrc_gfx_setUniform3f(psrc_gfx.objsprog, "lightPos", (float[]){psrc_gfx.campos.x, psrc_gfx.campos.y, psrc_gfx.campos.z});
+    psrc_gfx_setUniform1f(psrc_gfx.objsprog, "material.shine", obj->material.shine);
     glBindVertexArray(obj->VAO);
     glBindBuffer(GL_ARRAY_BUFFER, obj->VBO);
     glBufferData(GL_ARRAY_BUFFER, obj->vsize, obj->vertices, GL_STATIC_DRAW);
@@ -95,15 +85,15 @@ void psrc_gfx_renderObj(psrc_gfx_obj* obj) {
     glm_rotate(model, obj->rot.y * M_PI / 180, (vec3){0, 1, 0});
     glm_rotate(model, obj->rot.z * M_PI / 180, (vec3){0, 0, 1});
     glm_scale(model, (vec3){obj->scale.x, obj->scale.y, obj->scale.z});
-    psrc_gfx_setMat4(sprog, "model", model);
+    psrc_gfx_setMat4(psrc_gfx.objsprog, "model", model);
     if (obj->texture) {
         glBindTexture(GL_TEXTURE_2D, obj->texture);
-        glUniform1i(glGetUniformLocation(sprog, "TexData"), 0);
-        glUniform1i(glGetUniformLocation(sprog, "HasTex"), 1);
+        glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "TexData"), 0);
+        glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "HasTex"), 1);
         glDrawElements(GL_TRIANGLES, obj->trict, GL_UNSIGNED_INT, 0);
         glBindTexture(GL_TEXTURE_2D, 0);
     } else {
-        glUniform1i(glGetUniformLocation(sprog, "HasTex"), 0);
+        glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "HasTex"), 0);
         glDrawElements(GL_TRIANGLES, obj->trict, GL_UNSIGNED_INT, 0);
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -117,7 +107,7 @@ void psrc_gfx_updateScreen() {
 
 bool psrc_gfx_winQuit() {glfwPollEvents(); return glfwWindowShouldClose(psrc_gfx.window) || psrc.quitRequested;}
 
-psrc_gfx_obj* psrc_gfx_newObj(int type, psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s, float* v, long unsigned int vs, unsigned int* i, long unsigned int is, char* t) {
+psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s, float* v, long unsigned int vs, unsigned int* i, long unsigned int is, char* t, float shine) {
     int width, height, nrChannels;
     unsigned char* data;
     if (t) {
@@ -130,7 +120,6 @@ psrc_gfx_obj* psrc_gfx_newObj(int type, psrc_coord_3d p, psrc_coord_3d r, psrc_c
     glGenVertexArrays(1, &obj->VAO);
     glGenBuffers(1, &obj->VBO);
     glGenBuffers(1, &obj->EBO);
-    obj->type = type;
     obj->pos = p;
     obj->rot = r;
     obj->scale = s;
@@ -139,6 +128,7 @@ psrc_gfx_obj* psrc_gfx_newObj(int type, psrc_coord_3d p, psrc_coord_3d r, psrc_c
     obj->indices = i;
     obj->isize = is;
     obj->trict = is / sizeof(*i);
+    obj->material.shine = shine;
     if (t) {
         glGenTextures(1, &obj->texture);
         glBindTexture(GL_TEXTURE_2D, obj->texture);
@@ -152,6 +142,39 @@ psrc_gfx_obj* psrc_gfx_newObj(int type, psrc_coord_3d p, psrc_coord_3d r, psrc_c
         obj->texture = 0;
     }
     return obj;
+}
+
+psrc_gfx_light psrc_gfx_lightstack[256];
+int psrc_gfx_lightmaxct = 1;
+int psrc_gfx_lightstackp = 0;
+
+void psrc_gfx_updateLight(int i) {
+    char elem[16] = {0};
+    sprintf(elem, "light[%d].", i);
+    psrc_gfx_light* light = &psrc_gfx_lightstack[i];
+    psrc_gfx_setUniform1i(psrc_gfx.objsprog, "lightmaxct", psrc_gfx_lightmaxct);
+    psrc_gfx_setUniform1i(psrc_gfx.objsprog, psrc.getFText("%stype", elem), light->type);
+    psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sposition", elem), (float[]){light->pos.x, light->pos.y, light->pos.z});
+    psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sambient", elem), (float[]){light->ambient.r, light->ambient.g, light->ambient.b});
+    psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sdiffuse", elem), (float[]){light->diffuse.r, light->diffuse.g, light->diffuse.b});
+    psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sspecular", elem), (float[]){light->specular.r, light->specular.g, light->specular.b});
+    psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sdirection", elem), (float[]){light->direction.x, light->direction.y, light->direction.z});
+    psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%sconstant", elem), light->constant);
+    psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%slinear", elem), light->linear);
+    psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%squadratic", elem), light->quadratic);
+    psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%scutOff", elem), light->cutOff);
+    psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%souterCutOff", elem), light->outerCutOff);
+}
+
+psrc_gfx_light* psrc_gfx_getLight(int i) {
+    return &psrc_gfx_lightstack[i];
+}
+
+psrc_gfx_light* psrc_gfx_getNextLight() {
+    int i = 0;
+    while (i < 256 && psrc_gfx_lightstack[i].type) {++i;}
+    if (i > 255) return NULL;
+    return &psrc_gfx_lightstack[i];
 }
 
 void psrc_gfx_deinit() {
@@ -229,8 +252,10 @@ bool psrc_gfx_makeShaderProg(char* vs, char* fs, GLuint* p) {
 }
 
 psrc_gfx_struct* psrc_gfx_init() {
-    psrc_gfx = (psrc_gfx_struct){640, 480, 120, NULL, (psrc_coord_3d){0, 0, -4}, (psrc_coord_3d){0, 180, 0}, 50, 0, 0,
-        psrc_gfx_deinit, psrc_gfx_newObj, psrc_gfx_renderObj, psrc_gfx_updateScreen, psrc_gfx_updateCam, psrc_gfx_chkKey, psrc_gfx_winQuit};
+    psrc_gfx = (psrc_gfx_struct){640, 480, 0, NULL, (psrc_coord_3d){0, 0, -4}, (psrc_coord_3d){0, 180, 0}, 50, 0, 0,
+        psrc_gfx_deinit, psrc_gfx_newObj, psrc_gfx_renderObj,
+        psrc_gfx_updateScreen, psrc_gfx_updateCam, psrc_gfx_chkKey, psrc_gfx_winQuit};
+    if (psrc_gfx.fps == 0) {psrc_gfx.fps = 32767;}
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -250,6 +275,7 @@ psrc_gfx_struct* psrc_gfx_init() {
     glfwSetFramebufferSizeCallback(psrc_gfx.window, psrc_gfx_winch);
     if (!psrc_gfx_makeShaderProg("resources/base/shaders/vertex.glsl", "resources/base/shaders/fragment.glsl", &psrc_gfx.objsprog)) return NULL;
     //if (!psrc_gfx_makeShaderProg("resources/base/shaders/vertex_light.glsl", "resources/base/shaders/fragment_light.glsl", &psrc_gfx.lightsprog)) return NULL;
+    glUseProgram(psrc_gfx.objsprog);
     psrc_gfx_aspect = (float)psrc_gfx.win_width / (float)psrc_gfx.win_height;
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
@@ -262,5 +288,11 @@ psrc_gfx_struct* psrc_gfx_init() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glfwSwapBuffers(psrc_gfx.window);
     glfwPollEvents();
+    psrc_gfx_lightstack[0].type = 1;
+    psrc_gfx_lightstack[0].pos = psrc_gfx.campos;
+    psrc_gfx_lightstack[0].ambient = (psrc_color){0.2, 0.25, 0.2};
+    psrc_gfx_lightstack[0].diffuse = (psrc_color){0.75, 1, 0.75};
+    psrc_gfx_lightstack[0].specular = (psrc_color){1, 1, 0.75};
+    psrc_gfx_updateLight(0);
     return &psrc_gfx;
 }
