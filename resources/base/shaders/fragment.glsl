@@ -68,5 +68,5 @@ void main() {
     if (HasTex != 0) {
         FragColor *= (texture(TexData, TexCoord) + (material.shine / 4096));
     }
-    //FragColor = roundEven(FragColor * 8) / 8;
+    FragColor = roundEven(FragColor * 8) / 8;
 }
