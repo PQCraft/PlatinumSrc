@@ -21,6 +21,7 @@ typedef struct {
     unsigned int diffuse;
     unsigned int specular;
     float shine;
+    float lightResistance;
 } psrc_gfx_material;
 
 typedef struct {
@@ -51,6 +52,8 @@ typedef struct {
     float quadratic;
     float cutOff;
     float outerCutOff;
+    psrc_coord_3d topCorner;
+    psrc_coord_3d bottomCorner;
 } psrc_gfx_light;
 
 typedef struct {
@@ -64,7 +67,9 @@ typedef struct {
     GLuint objsprog;
     GLuint lightsprog;
     void (*deinit)(void);
-    psrc_gfx_obj* (*newObj)(psrc_coord_3d, psrc_coord_3d, psrc_coord_3d, float*, long unsigned int, unsigned int*, long unsigned int, char*, float);
+    psrc_gfx_obj* (*newObj)(psrc_coord_3d, psrc_coord_3d, psrc_coord_3d,
+        float*, long unsigned int, unsigned int*, long unsigned int,
+        char*, float, float);
     void (*renderObj)(psrc_gfx_obj*);
     psrc_gfx_light* (*getLight)(int);
     psrc_gfx_light* (*getNextLight)(void);

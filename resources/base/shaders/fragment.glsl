@@ -1,4 +1,5 @@
 #version 330 core
+#pragma optimize(on)
 
 out vec4 FragColor;
 
@@ -10,17 +11,13 @@ struct light_struct {
     vec3 specular;       
     vec3 direction;
     float range;
-    float constant;
-    float linear;
-    float quadratic;
-    float cutOff;
-    float outerCutOff;
+    vec3 tcorner;
+    vec3 bcorner;
 };
 
 struct material_struct {
-    sampler2D diffuse;
-    sampler2D specular;
     float shine;
+    float resis;
 };
 
 in vec3 CurColor;
@@ -31,76 +28,56 @@ in vec3 FragPos;
 uniform sampler2D TexData;
 uniform int HasTex;
 uniform vec3 viewPos; 
-uniform vec3 lightPos; 
-uniform vec3 lightColor;
-uniform int lightmaxct;
 
-uniform light_struct light[256];
+uniform light_struct light[64];
 uniform material_struct material;
 
-vec3 calcLight(int i)
-{
-    vec3 ambient = light[i].ambient;
-    vec3 norm = normalize(Normal);
-    float dist = 1 / mix(abs(distance(light[i].position, FragPos) + 1), 1, light[i].range);
-    vec3 lightDir = normalize(light[i].position - FragPos);
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * light[i].diffuse;
-    float specularStrength = 0.5;
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shine);
-    vec3 specular = specularStrength * spec * light[i].specular * (material.shine / 256);
-    return (ambient + diffuse + specular) * CurColor * dist;
+vec3 v3zero = vec3(0, 0, 0);
+vec3 v3one = vec3(1, 1, 1);
+
+bool bcheck(vec3 v, vec3 tcorner, vec3 bcorner) {
+    if (tcorner == v3zero && bcorner == v3zero) return true;
+    return (step(bcorner, v) - step(tcorner, v)) == v3one;
 }
 
-void main()
-{
-    vec3 result;
-    result.r = 0;
-    result.g = 0;
-    result.b = 0;
-    for (int i = 0; i < lightmaxct; ++i) {
+vec3 calcLight(int i) {
+    if (bcheck(FragPos, light[i].tcorner, light[i].bcorner)) {
+        float dist = 1 / mix(abs(distance(light[i].position, FragPos) + 1), 1, light[i].range);
+        vec3 viewDir = normalize(viewPos - FragPos);
+        if (light[i].type == 2) {
+            vec3 lightDir = normalize(-light[i].direction);
+            float diff = max(dot(Normal, lightDir), 0.0);
+            vec3 reflectDir = reflect(-lightDir, Normal);
+            float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shine);
+            vec3 ambient = light[i].ambient;
+            vec3 diffuse = light[i].diffuse * diff;
+            vec3 specular = light[i].specular * spec;
+            return (ambient + diffuse + specular) * CurColor;
+        } else {
+            vec3 ambient = light[i].ambient;
+            vec3 norm = normalize(Normal);
+            vec3 lightDir = normalize(light[i].position - FragPos);
+            float diff = max(dot(norm, lightDir), 0);
+            vec3 diffuse = diff * light[i].diffuse;
+            float specularStrength = material.shine / 256;
+            vec3 reflectDir = reflect(-lightDir, norm);
+            float spec = pow(max(dot(viewDir, reflectDir), 0), material.shine);
+            vec3 specular = specularStrength * spec * light[i].specular * dist;
+            return (ambient + diffuse + specular) * CurColor * dist;
+        }
+    } else {
+        return vec3(0, 0, 0);
+    }
+}
+
+void main() {
+    vec3 result = vec3(0.0, 0.0, 0.0);
+    for (int i = 0; i < 64; ++i) {
         if (light[i].type != 0) result += calcLight(i);
     }
+    result = mix(result, CurColor, material.resis);
     FragColor = vec4(result, 1.0);
     if (HasTex != 0) {
         FragColor *= (texture(TexData, TexCoord) + (material.shine / 4096));
     }
 }
-
-#if 1 && 0
-#version 330 core
-out vec4 FragColor;
-
-in vec3 Normal;  
-in vec3 FragPos;  
-  
-uniform vec3 lightPos; 
-uniform vec3 viewPos; 
-uniform vec3 lightColor;
-uniform vec3 objectColor;
-
-void main()
-{
-    // ambient
-    float ambientStrength = 0.1;
-    vec3 ambient = ambientStrength * lightColor;
-      
-    // diffuse 
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(lightPos - FragPos);
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * lightColor;
-    
-    // specular
-    float specularStrength = 0.5;
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);  
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-    vec3 specular = specularStrength * spec * lightColor;  
-        
-    vec3 result = (ambient + diffuse + specular) * objectColor;
-    FragColor = vec4(result, 1.0);
-}
-#endif

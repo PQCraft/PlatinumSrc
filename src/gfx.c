@@ -63,6 +63,7 @@ void psrc_gfx_updateCam() {
 void psrc_gfx_renderObj(psrc_gfx_obj* obj) {
     if (!obj) return;
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, "material.shine", obj->material.shine);
+    psrc_gfx_setUniform1f(psrc_gfx.objsprog, "material.resis", obj->material.lightResistance);
     glBindVertexArray(obj->VAO);
     glBindBuffer(GL_ARRAY_BUFFER, obj->VBO);
     glBufferData(GL_ARRAY_BUFFER, obj->vsize, obj->vertices, GL_STATIC_DRAW);
@@ -104,7 +105,9 @@ void psrc_gfx_updateScreen() {
 
 bool psrc_gfx_winQuit() {glfwPollEvents(); return glfwWindowShouldClose(psrc_gfx.window) || psrc.quitRequested;}
 
-psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s, float* v, long unsigned int vs, unsigned int* i, long unsigned int is, char* t, float shine) {
+psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
+    float* v, long unsigned int vs, unsigned int* i, long unsigned int is,
+    char* t, float shine, float resis) {
     int width, height, nrChannels;
     unsigned char* data;
     if (t) {
@@ -126,6 +129,7 @@ psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
     obj->isize = is;
     obj->trict = is / sizeof(*i);
     obj->material.shine = shine;
+    obj->material.lightResistance = resis;
     if (t) {
         glGenTextures(1, &obj->texture);
         glBindTexture(GL_TEXTURE_2D, obj->texture);
@@ -141,15 +145,12 @@ psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
     return obj;
 }
 
-psrc_gfx_light psrc_gfx_lightstack[256];
-int psrc_gfx_lightmaxct = 256;
-int psrc_gfx_lightstackp = 0;
+psrc_gfx_light psrc_gfx_lightstack[64];
 
 void psrc_gfx_updateLight(int i) {
     char elem[16] = {0};
     sprintf(elem, "light[%d].", i);
     psrc_gfx_light* light = &psrc_gfx_lightstack[i];
-    psrc_gfx_setUniform1i(psrc_gfx.objsprog, "lightmaxct", psrc_gfx_lightmaxct);
     psrc_gfx_setUniform1i(psrc_gfx.objsprog, psrc.getFText("%stype", elem), light->type);
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sposition", elem), (float[]){light->pos.x, light->pos.y, light->pos.z});
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sambient", elem), (float[]){light->ambient.r, light->ambient.g, light->ambient.b});
@@ -162,6 +163,8 @@ void psrc_gfx_updateLight(int i) {
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%squadratic", elem), light->quadratic);
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%scutOff", elem), light->cutOff);
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%souterCutOff", elem), light->outerCutOff);
+    psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%stcorner", elem), (float[]){light->topCorner.x, light->topCorner.y, light->topCorner.z});
+    psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sbcorner", elem), (float[]){light->bottomCorner.x, light->bottomCorner.y, light->bottomCorner.z});
 }
 
 psrc_gfx_light* psrc_gfx_getLight(int i) {
@@ -170,8 +173,8 @@ psrc_gfx_light* psrc_gfx_getLight(int i) {
 
 psrc_gfx_light* psrc_gfx_getNextLight() {
     int i = 0;
-    while (i < 256 && psrc_gfx_lightstack[i].type) {++i;}
-    if (i > 255) return NULL;
+    while (i < 64 && psrc_gfx_lightstack[i].type) {++i;}
+    if (i > 63) return NULL;
     return &psrc_gfx_lightstack[i];
 }
 
@@ -271,7 +274,7 @@ psrc_gfx_struct* psrc_gfx_init() {
     }
     glViewport(0, 0, psrc_gfx.win_width, psrc_gfx.win_height);
     glfwSetFramebufferSizeCallback(psrc_gfx.window, psrc_gfx_winch);
-    for (int i = 0; i < 256; ++i) {
+    for (int i = 0; i < 64; ++i) {
         psrc_gfx_lightstack[i].id = i;
     }
     if (!psrc_gfx_makeShaderProg("resources/base/shaders/vertex.glsl", "resources/base/shaders/fragment.glsl", &psrc_gfx.objsprog)) return NULL;
@@ -279,7 +282,7 @@ psrc_gfx_struct* psrc_gfx_init() {
     psrc_gfx_aspect = (float)psrc_gfx.win_width / (float)psrc_gfx.win_height;
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+    glDepthFunc(GL_FALSE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glClearColor(0, 0, 0, 1);

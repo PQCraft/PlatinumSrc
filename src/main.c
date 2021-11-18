@@ -206,6 +206,19 @@ void psrc_main_test() {
     psrc.gfx->updateCam();
 }
 
+void psrc_main_test_renderObjAtFloors(psrc_gfx_obj* obj) {
+    psrc.gfx->renderObj(obj);
+    obj->pos.x += 40;
+    psrc.gfx->renderObj(obj);
+    obj->pos.x -= 40;
+    obj->pos.z += 40;
+    psrc.gfx->renderObj(obj);
+    obj->pos.x += 40;
+    psrc.gfx->renderObj(obj);
+    obj->pos.x -= 40;
+    obj->pos.z -= 40;
+}
+
 char psrc_main_getFTextBuf[32768];
 
 char* psrc_main_getFText(char* f, ...) {
@@ -355,31 +368,86 @@ int main(int argc, char** argv) {
         -0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
         -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  0.0f,  0.0f, -1.0f
     };
+    float vertices4[] = {
+         0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   4.0f, 4.0f,  0.0f,  0.0f, -1.0f,
+         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   4.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 4.0f,  0.0f,  0.0f, -1.0f
+    };
+    float vertices5[] = {
+         0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   7.0f, 7.0f,  0.0f,  0.0f, -1.0f,
+         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   7.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 7.0f,  0.0f,  0.0f, -1.0f
+    };
     unsigned int indices2[] = {
         0, 1, 3,
         1, 2, 3
     };
-    psrc_gfx_obj* testobj = psrc.gfx->newObj((psrc_coord_3d){0, 1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
-        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg", 256);
-    psrc_gfx_obj* testobj2 = psrc.gfx->newObj((psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){2, 2, 2},
-        vertices2, sizeof(vertices2), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg", 256);
+    psrc_gfx_obj* testobj1 = psrc.gfx->newObj((psrc_coord_3d){0, 1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg", 256, 0);
+    psrc_gfx_obj* testobj2 = psrc.gfx->newObj((psrc_coord_3d){0, 0.01, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){2, 2, 2},
+        vertices2, sizeof(vertices2), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg", 256, 0);
     psrc_gfx_obj* testobj3 = psrc.gfx->newObj((psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
-        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16);
-    psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
-        vertices3, sizeof(vertices3), indices2, sizeof(indices2), "resources/base/textures/base.bmp", 256);
-    psrc_gfx_obj* testobj5 = psrc.gfx->newObj((psrc_coord_3d){0, 0.75, 4}, (psrc_coord_3d){45, 0, 0}, (psrc_coord_3d){2, 2, 2},
-        vertices3, sizeof(vertices3), indices2, sizeof(indices2), NULL, 256);
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16, 0);
+    psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){0, 0.75, 4}, (psrc_coord_3d){-45, 0, 0}, (psrc_coord_3d){2, 2, 2},
+        vertices3, sizeof(vertices3), indices2, sizeof(indices2), NULL, 256, 0);
     psrc_gfx_light* camlight = psrc.gfx->getNextLight();
+    psrc_gfx_obj* floor1 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
+        vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/toxic.jpg", 0, 1);
+    psrc_gfx_obj* floor2 = psrc.gfx->newObj((psrc_coord_3d){40, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
+        vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/woodenfloor.jpg", 128, 0);
+    psrc_gfx_obj* floor3 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 40}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
+        vertices5, sizeof(vertices5), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg", 0, 0);
+    psrc_gfx_obj* floor4 = psrc.gfx->newObj((psrc_coord_3d){40, 0, 40}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
+        vertices5, sizeof(vertices5), indices2, sizeof(indices2), "resources/common/textures/water.jpg", 0.5, 0.5);
     camlight->type = 1;
-    camlight->range = 0.5;
+    camlight->range = 0.8;
     camlight->diffuse = (psrc_color){0.75, 0.8, 0.75};
     camlight->specular = (psrc_color){0.7, 0.8, 0.7};
     psrc_gfx_light* ambientlight = psrc.gfx->getNextLight();
-    ambientlight->type = 1;
+    ambientlight->type = 2;
     ambientlight->range = 1;
-    ambientlight->ambient = (psrc_color){0, 0, 0};
-    ambientlight->diffuse = (psrc_color){0.0, 0.0, 0.0};
+    ambientlight->pos = (psrc_coord_3d){0, 0, 0};
+    ambientlight->ambient = (psrc_color){0.2, 0.4, 0.2};
+    ambientlight->direction = (psrc_coord_3d){0, 180, 0};
+    ambientlight->diffuse = (psrc_color){0.6, 0.9, 0.5};
     ambientlight->specular = (psrc_color){0.0, 0.0, 0.0};
+    ambientlight->topCorner = (psrc_coord_3d){20.5, 20, 20.5};
+    ambientlight->bottomCorner = (psrc_coord_3d){-20.5, -20, -20.5};
+    psrc.gfx->updateLight(ambientlight->id);
+    ambientlight = psrc.gfx->getNextLight();
+    ambientlight->type = 2;
+    ambientlight->range = 1;
+    ambientlight->pos = (psrc_coord_3d){40, 20, 0};
+    ambientlight->ambient = (psrc_color){0.75, 0.7, 0.6};
+    ambientlight->direction = (psrc_coord_3d){0, -180, 0};
+    ambientlight->diffuse = (psrc_color){0.9, 0.7, 0.6};
+    ambientlight->specular = (psrc_color){0.0, 0.0, 0.0};
+    ambientlight->topCorner = (psrc_coord_3d){60.5, 20, 20.5};
+    ambientlight->bottomCorner = (psrc_coord_3d){19.5, -20, -20.5};
+    psrc.gfx->updateLight(ambientlight->id);
+    ambientlight = psrc.gfx->getNextLight();
+    ambientlight->type = 2;
+    ambientlight->range = 1;
+    ambientlight->pos = (psrc_coord_3d){0, 20, 40};
+    ambientlight->ambient = (psrc_color){0.25, 0.2, 0.1};
+    ambientlight->direction = (psrc_coord_3d){0, -180, 0};
+    ambientlight->diffuse = (psrc_color){0.9, 0.7, 0.6};
+    ambientlight->specular = (psrc_color){0.0, 0.0, 0.0};
+    ambientlight->topCorner = (psrc_coord_3d){20.5, 20, 60.5};
+    ambientlight->bottomCorner = (psrc_coord_3d){-20.5, -20, 19.5};
+    psrc.gfx->updateLight(ambientlight->id);
+    ambientlight = psrc.gfx->getNextLight();
+    ambientlight->type = 2;
+    ambientlight->range = 1;
+    ambientlight->pos = (psrc_coord_3d){0, 20, 40};
+    ambientlight->ambient = (psrc_color){0.3, 0.5, 0.7};
+    ambientlight->direction = (psrc_coord_3d){0, 180, 0};
+    ambientlight->diffuse = (psrc_color){0.3, 0.7, 0.8};
+    ambientlight->specular = (psrc_color){0.0, 0.0, 0.0};
+    ambientlight->topCorner = (psrc_coord_3d){60.5, 20, 60.5};
+    ambientlight->bottomCorner = (psrc_coord_3d){19.5, -20, 19.5};
     psrc.gfx->updateLight(ambientlight->id);
     float opm = psrc_main_test_posmult;
     float orm = psrc_main_test_rotmult;
@@ -388,15 +456,18 @@ int main(int argc, char** argv) {
         psrc_main_test();
         camlight->pos = psrc.gfx->campos;
         psrc.gfx->updateLight(camlight->id);
-        testobj->rot.x = (float)glfwGetTime() * 90;
-        testobj->rot.y = (float)glfwGetTime() * 90;
-        testobj->rot.z = (float)glfwGetTime() * 90;
+        testobj1->rot.x = (float)glfwGetTime() * 90;
+        testobj1->rot.y = (float)glfwGetTime() * 90;
+        testobj1->rot.z = (float)glfwGetTime() * 90;
         testobj2->rot.z = -(float)glfwGetTime() * 45;
-        psrc.gfx->renderObj(testobj);
-        psrc.gfx->renderObj(testobj2);
-        psrc.gfx->renderObj(testobj3);
-        psrc.gfx->renderObj(testobj4);
-        psrc.gfx->renderObj(testobj5);
+        psrc.gfx->renderObj(floor1);
+        psrc.gfx->renderObj(floor2);
+        psrc.gfx->renderObj(floor3);
+        psrc.gfx->renderObj(floor4);
+        psrc_main_test_renderObjAtFloors(testobj1);
+        psrc_main_test_renderObjAtFloors(testobj2);
+        psrc_main_test_renderObjAtFloors(testobj3);
+        psrc_main_test_renderObjAtFloors(testobj4);
         psrc.gfx->updateScreen();
         uint64_t delayoffset = psrc.utime() - starttime;
         uint64_t delaytime = 1000000 / psrc.gfx->fps - delayoffset;
