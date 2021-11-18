@@ -148,22 +148,87 @@ void psrc_main_cleanExitSig(int sig) {
 
 float psrc_main_test_posmult = 0.25;
 float psrc_main_test_rotmult = 3;
+float psrc_main_test_fpsmult = 0;
 
-void psrc_main_test() {
+void psrc_main_test_input() {
     float pmult = psrc_main_test_posmult;
     float rmult = psrc_main_test_rotmult;
+    static bool fullscreen = false;
+    static bool setfullscr = false;
+    static int winox, winoy = 0;
+    if ((psrc.gfx->chkKey(GLFW_KEY_LEFT_ALT) == GLFW_PRESS || psrc.gfx->chkKey(GLFW_KEY_RIGHT_ALT) == GLFW_PRESS) && psrc.gfx->chkKey(GLFW_KEY_ENTER) == GLFW_PRESS) {
+        if (!setfullscr) {
+            setfullscr = true;
+            fullscreen = !fullscreen;
+            if (fullscreen) {
+                glfwGetWindowPos(psrc.gfx->window, &winox, &winoy);
+                glfwSetWindowMonitor(psrc.gfx->window, psrc.gfx->monitor, 0, 0, psrc.gfx->win_width, psrc.gfx->win_height, 15);
+            } else {
+                glfwSetWindowMonitor(psrc.gfx->window, NULL, 0, 0, psrc.gfx->win_width, psrc.gfx->win_height, psrc.gfx->fps);
+                glfwSetWindowPos(psrc.gfx->window, winox, winoy);
+            }
+        }
+    } else {
+        setfullscr = false;
+    }
     if (psrc.gfx->chkKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || psrc.gfx->chkKey(GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {
-        psrc.gfx->campos.y = 0.75;
+        psrc.gfx->campos.y -= psrc_main_test_fpsmult / M_PI * 0.75;
+        if (psrc.gfx->campos.y < 1) psrc.gfx->campos.y = 1;
         pmult /= 2;
     } else {
-        psrc.gfx->campos.y = 1.5;
+        if (psrc.gfx->campos.y < 2) psrc.gfx->campos.y = 2;
     }
-    if (psrc.gfx->chkKey(GLFW_KEY_LEFT_ALT) == GLFW_PRESS || psrc.gfx->chkKey(GLFW_KEY_RIGHT_ALT) == GLFW_PRESS) {
+    if (psrc.gfx->chkKey(GLFW_KEY_Z) == GLFW_PRESS) {
         psrc.gfx->camfov = 10;
         pmult /= 2;
         rmult /= 3;
     } else {
         psrc.gfx->camfov = 50;
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || psrc.gfx->chkKey(GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS) {
+        pmult *= 2;
+    }
+    static bool mrelease = false;
+    static bool mposset = false;
+    static double mxpos, mypos;
+    if ((glfwGetWindowAttrib(psrc.gfx->window, GLFW_HOVERED) || mrelease) && glfwGetMouseButton(psrc.gfx->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        mrelease = true;
+        if (!mposset) {glfwGetCursorPos(psrc.gfx->window, &mxpos, &mypos); mposset = true;}
+        static double nmxpos, nmypos;
+        glfwGetCursorPos(psrc.gfx->window, &nmxpos, &nmypos);
+        psrc.gfx->camrot.x += (mypos - nmypos) * 0.125;
+        psrc.gfx->camrot.y -= (mxpos - nmxpos) * 0.125;
+        if (psrc.gfx->camrot.y < -360) psrc.gfx->camrot.y += 360;
+        else if (psrc.gfx->camrot.y > 360) psrc.gfx->camrot.y -= 360;
+        if (psrc.gfx->camrot.x > 89.99) psrc.gfx->camrot.x = 89.99;
+        if (psrc.gfx->camrot.x < -89.99) psrc.gfx->camrot.x = -89.99;
+        mxpos = nmxpos;
+        mypos = nmypos;
+        glfwSetInputMode(psrc.gfx->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    } else {
+        mrelease = false;
+        mposset = false;
+        glfwSetInputMode(psrc.gfx->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        glfwGetCursorPos(psrc.gfx->window, &mxpos, &mypos);
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_UP) == GLFW_PRESS) {
+        psrc.gfx->camrot.x += rmult;
+        if (psrc.gfx->camrot.x > 89.99) psrc.gfx->camrot.x = 89.99;
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_DOWN) == GLFW_PRESS) {
+        psrc.gfx->camrot.x -= rmult;
+        if (psrc.gfx->camrot.x < -89.99) psrc.gfx->camrot.x = -89.99;
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_LEFT) == GLFW_PRESS) {
+        psrc.gfx->camrot.y -= rmult;
+        if (psrc.gfx->camrot.y < -360) psrc.gfx->camrot.y += 360;
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        psrc.gfx->camrot.y += rmult;
+        if (psrc.gfx->camrot.y > 360) psrc.gfx->camrot.y -= 360;
+    }
+    if (psrc.gfx->chkKey(GLFW_KEY_SPACE) == GLFW_PRESS) {
+        psrc.gfx->campos.y += psrc_main_test_fpsmult / M_PI * 0.75;
     }
     if (psrc.gfx->chkKey(GLFW_KEY_W) == GLFW_PRESS) {
         float yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
@@ -187,22 +252,7 @@ void psrc_main_test() {
         psrc.gfx->campos.x += cosf(yrotrad) * pmult;
         psrc.gfx->campos.z += sinf(yrotrad) * pmult;
     }
-    if (psrc.gfx->chkKey(GLFW_KEY_UP) == GLFW_PRESS) {
-        if (psrc.gfx->camrot.x < 90 - rmult) psrc.gfx->camrot.x += rmult;
-        else {psrc.gfx->camrot.x = 89.999;}
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_DOWN) == GLFW_PRESS) {
-        if (psrc.gfx->camrot.x > -90 + rmult) psrc.gfx->camrot.x -= rmult;
-        else {psrc.gfx->camrot.x = -89.999;}
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_LEFT) == GLFW_PRESS) {
-        psrc.gfx->camrot.y -= rmult;
-        if (psrc.gfx->camrot.y < -360) psrc.gfx->camrot.y += 360;
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        psrc.gfx->camrot.y += rmult;
-        if (psrc.gfx->camrot.y > 360) psrc.gfx->camrot.y -= 360;
-    }
+    
     psrc.gfx->updateCam();
 }
 
@@ -217,6 +267,212 @@ void psrc_main_test_renderObjAtFloors(psrc_gfx_obj* obj) {
     psrc.gfx->renderObj(obj);
     obj->pos.x -= 40;
     obj->pos.z -= 40;
+}
+
+void psrc_main_test() {
+    float vertices[] = {
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+
+        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f,  1.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
+
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f, -1.0f,  0.0f,
+
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  1.0f,  0.0f
+    };
+    unsigned int indices[] = {
+         0,  1,  2,
+         3,  4,  5,
+         6,  7,  8,
+         9, 10, 11,
+        12, 13, 14,
+        15, 16, 17,
+        18, 19, 20,
+        21, 22, 23,
+        24, 25, 26,
+        27, 28, 29,
+        30, 31, 32,
+        33, 34, 35
+    };
+    float vertices2[] = {
+         0.8f,  0.8f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 0.0f,   1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f, -0.8f, 0.0f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f,  0.8f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,  0.0f,  0.0f, -1.0f
+    };
+    /*
+    float vertices3[] = {
+         0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  0.0f,  0.0f, -1.0f
+    };
+    */
+    float vertices4[] = {
+         0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   4.0f, 4.0f,  0.0f,  0.0f, -1.0f,
+         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   4.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 4.0f,  0.0f,  0.0f, -1.0f
+    };
+    float vertices5[] = {
+         0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   7.0f, 7.0f,  0.0f,  0.0f, -1.0f,
+         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   7.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 7.0f,  0.0f,  0.0f, -1.0f
+    };
+    unsigned int indices2[] = {
+        0, 1, 3,
+        1, 2, 3
+    };
+    if (glfwRawMouseMotionSupported()) glfwSetInputMode(psrc.gfx->window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    psrc_gfx_obj* testobj1 = psrc.gfx->newObj((psrc_coord_3d){0, 1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg", 256, 0);
+    psrc_gfx_obj* testobj2 = psrc.gfx->newObj((psrc_coord_3d){0, 0.05, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){2, 2, 2},
+        vertices2, sizeof(vertices2), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg", 256, 0);
+    psrc_gfx_obj* testobj3 = psrc.gfx->newObj((psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16, 0);
+    psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){0, 4, 4}, (psrc_coord_3d){-45, 0, 0}, (psrc_coord_3d){1.5, 1.5, 1.5},
+        vertices, sizeof(vertices), indices, sizeof(indices), NULL, 256, 0);
+    psrc_gfx_light* camlight = psrc.gfx->getNextLight();
+    psrc_gfx_obj* floor1 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
+        vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/toxic.jpg", 0, 1);
+    psrc_gfx_obj* floor2 = psrc.gfx->newObj((psrc_coord_3d){40, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
+        vertices5, sizeof(vertices5), indices2, sizeof(indices2), "resources/common/textures/woodenfloor.jpg", 128, 0);
+    psrc_gfx_obj* floor3 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 40}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
+        vertices5, sizeof(vertices5), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg", 0, 0);
+    psrc_gfx_obj* floor4 = psrc.gfx->newObj((psrc_coord_3d){40, 0, 40}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
+        vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/water.jpg", 0.5, 1);
+    camlight->type = 1;
+    camlight->range = 0.8;
+    camlight->diffuse = (psrc_color){0.75, 0.8, 0.75};
+    camlight->specular = (psrc_color){0.7, 0.8, 0.7};
+    psrc_gfx_light* ambientlight = psrc.gfx->getNextLight();
+    ambientlight->type = 2;
+    ambientlight->range = 1;
+    ambientlight->pos = (psrc_coord_3d){0, 0, 0};
+    ambientlight->ambient = (psrc_color){0.2, 0.4, 0.2};
+    ambientlight->diffuse = (psrc_color){0.6, 0.9, 0.5};
+    ambientlight->direction = (psrc_coord_3d){0, 180, 0};
+    ambientlight->topCorner = (psrc_coord_3d){20, 20, 20};
+    ambientlight->bottomCorner = (psrc_coord_3d){-20, -20, -20};
+    psrc.gfx->updateLight(ambientlight->id);
+    ambientlight = psrc.gfx->getNextLight();
+    ambientlight->type = 2;
+    ambientlight->range = 1;
+    ambientlight->pos = (psrc_coord_3d){40, 20, 0};
+    ambientlight->ambient = (psrc_color){0.75, 0.7, 0.6};
+    ambientlight->diffuse = (psrc_color){0.9, 0.7, 0.6};
+    ambientlight->direction = (psrc_coord_3d){0, -180, 0};
+    ambientlight->topCorner = (psrc_coord_3d){60, 20, 20};
+    ambientlight->bottomCorner = (psrc_coord_3d){20, -20, -20};
+    psrc.gfx->updateLight(ambientlight->id);
+    ambientlight = psrc.gfx->getNextLight();
+    ambientlight->type = 2;
+    ambientlight->range = 1;
+    ambientlight->pos = (psrc_coord_3d){0, 0, 40};
+    ambientlight->ambient = (psrc_color){0.25, 0.2, 0.1};
+    ambientlight->diffuse = (psrc_color){0.9, 0.7, 0.6};
+    ambientlight->direction = (psrc_coord_3d){90, -180, 90};
+    ambientlight->topCorner = (psrc_coord_3d){20, 20, 60};
+    ambientlight->bottomCorner = (psrc_coord_3d){-20, -20, 20};
+    psrc.gfx->updateLight(ambientlight->id);
+    ambientlight = psrc.gfx->getNextLight();
+    ambientlight->type = 2;
+    ambientlight->range = 1;
+    ambientlight->pos = (psrc_coord_3d){0, 20, 40};
+    ambientlight->ambient = (psrc_color){0.41, 0.4175, 0.42};
+    ambientlight->ambient = (psrc_color){0.7, 0.7, 0.65};
+    ambientlight->diffuse = (psrc_color){0.2, 0.4, 0.38};
+    ambientlight->diffuse = (psrc_color){0.4, 0.4, 0.15};
+    ambientlight->direction = (psrc_coord_3d){0, 180, 0};
+    ambientlight->direction = (psrc_coord_3d){90, -180, 45};
+    ambientlight->topCorner = (psrc_coord_3d){60, 20, 60};
+    ambientlight->bottomCorner = (psrc_coord_3d){20, -20, 20};
+    psrc.gfx->updateLight(ambientlight->id);
+    float opm = psrc_main_test_posmult;
+    float orm = psrc_main_test_rotmult;
+    camlight->type = 0;
+    psrc.sound->playMusic("resources/common/music/walk_in_the_woods.mp3");
+    while (!psrc.gfx->winQuit()) {
+        uint64_t starttime = psrc.utime();
+        psrc_main_test_input();
+        camlight->pos = psrc.gfx->campos;
+        psrc.gfx->updateLight(camlight->id);
+        testobj1->rot.x = (float)glfwGetTime() * 90;
+        testobj1->rot.y = (float)glfwGetTime() * 90;
+        testobj1->rot.z = (float)glfwGetTime() * 90;
+        testobj2->rot.z = -(float)glfwGetTime() * 45;
+        testobj4->rot.x = (float)glfwGetTime() * 90;
+        testobj4->rot.z = -(float)glfwGetTime() * 90;
+        psrc.gfx->renderObj(floor1);
+        psrc.gfx->renderObj(floor2);
+        psrc.gfx->renderObj(floor3);
+        psrc.gfx->renderObj(floor4);
+        psrc_main_test_renderObjAtFloors(testobj1);
+        psrc_main_test_renderObjAtFloors(testobj2);
+        psrc_main_test_renderObjAtFloors(testobj3);
+        psrc_main_test_renderObjAtFloors(testobj4);
+        if (!glfwGetWindowAttrib(psrc.gfx->window, GLFW_FOCUSED)) psrc.wait(1000000 / 15);
+        psrc.gfx->updateScreen();
+        uint64_t delayoffset = psrc.utime() - starttime;
+        uint64_t delaytime = 1000000 / psrc.gfx->fps - delayoffset;
+        //printf("[%lu], [%lu], [%lu]\n", psrc.utime() - starttime, delayoffset, delaytime);
+        if (delaytime < 1000000 / psrc.gfx->fps) psrc.wait(delaytime);
+        psrc_main_test_fpsmult = (float)(psrc.utime() - starttime) / (1000000.0f / 60.0f);
+        psrc_main_test_posmult = opm * psrc_main_test_fpsmult;
+        psrc_main_test_rotmult = orm * psrc_main_test_fpsmult;
+        vertices4[7] += 0.005 * psrc_main_test_fpsmult;
+        vertices4[8] += 0.005 * psrc_main_test_fpsmult;
+        vertices4[18] += 0.005 * psrc_main_test_fpsmult;
+        vertices4[19] += 0.005 * psrc_main_test_fpsmult;
+        vertices4[29] += 0.005 * psrc_main_test_fpsmult;
+        vertices4[30] += 0.005 * psrc_main_test_fpsmult;
+        vertices4[40] += 0.005 * psrc_main_test_fpsmult;
+        vertices4[41] += 0.005 * psrc_main_test_fpsmult;
+        if (vertices4[7] >= 8.0) {
+            vertices4[7] -= 4.0;
+            vertices4[8] -= 4.0;
+            vertices4[18] -= 4.0;
+            vertices4[19] -= 4.0;
+            vertices4[29] -= 4.0;
+            vertices4[30] -= 4.0;
+            vertices4[40] -= 4.0;
+            vertices4[41] -= 4.0;
+        }
+    }
 }
 
 char psrc_main_getFTextBuf[32768];
@@ -297,185 +553,8 @@ int main(int argc, char** argv) {
     }
     skipscargv:;
     psrc_main_init();
-    if (chdir(psrc_main_pathfilename(psrc_startcmd))) {psrc.displayError(PSRC_ERR, "Fatal", "Could not find resources folder"); psrc_main_cleanExit(1);};
-    //psrc.sound->playMusic("resources/common/music/walk_in_the_woods.mp3");
-    float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  0.0f, -1.0f,
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-
-        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f,  1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  0.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f,  1.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f,  1.0f,
-
-        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
-
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
-
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f, -1.0f,  0.0f,
-
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  1.0f,  0.0f
-    };
-    unsigned int indices[] = {
-         0,  1,  2,
-         3,  4,  5,
-         6,  7,  8,
-         9, 10, 11,
-        12, 13, 14,
-        15, 16, 17,
-        18, 19, 20,
-        21, 22, 23,
-        24, 25, 26,
-        27, 28, 29,
-        30, 31, 32,
-        33, 34, 35
-    };
-    float vertices2[] = {
-         0.8f,  0.8f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
-         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 0.0f,   1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-        -0.8f, -0.8f, 0.0f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-        -0.8f,  0.8f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,  0.0f,  0.0f, -1.0f
-    };
-    float vertices3[] = {
-         0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
-         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-        -0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f,  0.0f,  0.0f, -1.0f
-    };
-    float vertices4[] = {
-         0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   4.0f, 4.0f,  0.0f,  0.0f, -1.0f,
-         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   4.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-        -0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 4.0f,  0.0f,  0.0f, -1.0f
-    };
-    float vertices5[] = {
-         0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   7.0f, 7.0f,  0.0f,  0.0f, -1.0f,
-         0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   7.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-        -0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-        -0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 7.0f,  0.0f,  0.0f, -1.0f
-    };
-    unsigned int indices2[] = {
-        0, 1, 3,
-        1, 2, 3
-    };
-    psrc_gfx_obj* testobj1 = psrc.gfx->newObj((psrc_coord_3d){0, 1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
-        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg", 256, 0);
-    psrc_gfx_obj* testobj2 = psrc.gfx->newObj((psrc_coord_3d){0, 0.01, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){2, 2, 2},
-        vertices2, sizeof(vertices2), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg", 256, 0);
-    psrc_gfx_obj* testobj3 = psrc.gfx->newObj((psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
-        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16, 0);
-    psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){0, 0.75, 4}, (psrc_coord_3d){-45, 0, 0}, (psrc_coord_3d){2, 2, 2},
-        vertices3, sizeof(vertices3), indices2, sizeof(indices2), NULL, 256, 0);
-    psrc_gfx_light* camlight = psrc.gfx->getNextLight();
-    psrc_gfx_obj* floor1 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
-        vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/toxic.jpg", 0, 1);
-    psrc_gfx_obj* floor2 = psrc.gfx->newObj((psrc_coord_3d){40, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
-        vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/woodenfloor.jpg", 128, 0);
-    psrc_gfx_obj* floor3 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 40}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
-        vertices5, sizeof(vertices5), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg", 0, 0);
-    psrc_gfx_obj* floor4 = psrc.gfx->newObj((psrc_coord_3d){40, 0, 40}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
-        vertices5, sizeof(vertices5), indices2, sizeof(indices2), "resources/common/textures/water.jpg", 0.5, 0.5);
-    camlight->type = 1;
-    camlight->range = 0.8;
-    camlight->diffuse = (psrc_color){0.75, 0.8, 0.75};
-    camlight->specular = (psrc_color){0.7, 0.8, 0.7};
-    psrc_gfx_light* ambientlight = psrc.gfx->getNextLight();
-    ambientlight->type = 2;
-    ambientlight->range = 1;
-    ambientlight->pos = (psrc_coord_3d){0, 0, 0};
-    ambientlight->ambient = (psrc_color){0.2, 0.4, 0.2};
-    ambientlight->direction = (psrc_coord_3d){0, 180, 0};
-    ambientlight->diffuse = (psrc_color){0.6, 0.9, 0.5};
-    ambientlight->specular = (psrc_color){0.0, 0.0, 0.0};
-    ambientlight->topCorner = (psrc_coord_3d){20.5, 20, 20.5};
-    ambientlight->bottomCorner = (psrc_coord_3d){-20.5, -20, -20.5};
-    psrc.gfx->updateLight(ambientlight->id);
-    ambientlight = psrc.gfx->getNextLight();
-    ambientlight->type = 2;
-    ambientlight->range = 1;
-    ambientlight->pos = (psrc_coord_3d){40, 20, 0};
-    ambientlight->ambient = (psrc_color){0.75, 0.7, 0.6};
-    ambientlight->direction = (psrc_coord_3d){0, -180, 0};
-    ambientlight->diffuse = (psrc_color){0.9, 0.7, 0.6};
-    ambientlight->specular = (psrc_color){0.0, 0.0, 0.0};
-    ambientlight->topCorner = (psrc_coord_3d){60.5, 20, 20.5};
-    ambientlight->bottomCorner = (psrc_coord_3d){19.5, -20, -20.5};
-    psrc.gfx->updateLight(ambientlight->id);
-    ambientlight = psrc.gfx->getNextLight();
-    ambientlight->type = 2;
-    ambientlight->range = 1;
-    ambientlight->pos = (psrc_coord_3d){0, 20, 40};
-    ambientlight->ambient = (psrc_color){0.25, 0.2, 0.1};
-    ambientlight->direction = (psrc_coord_3d){0, -180, 0};
-    ambientlight->diffuse = (psrc_color){0.9, 0.7, 0.6};
-    ambientlight->specular = (psrc_color){0.0, 0.0, 0.0};
-    ambientlight->topCorner = (psrc_coord_3d){20.5, 20, 60.5};
-    ambientlight->bottomCorner = (psrc_coord_3d){-20.5, -20, 19.5};
-    psrc.gfx->updateLight(ambientlight->id);
-    ambientlight = psrc.gfx->getNextLight();
-    ambientlight->type = 2;
-    ambientlight->range = 1;
-    ambientlight->pos = (psrc_coord_3d){0, 20, 40};
-    ambientlight->ambient = (psrc_color){0.3, 0.5, 0.7};
-    ambientlight->direction = (psrc_coord_3d){0, 180, 0};
-    ambientlight->diffuse = (psrc_color){0.3, 0.7, 0.8};
-    ambientlight->specular = (psrc_color){0.0, 0.0, 0.0};
-    ambientlight->topCorner = (psrc_coord_3d){60.5, 20, 60.5};
-    ambientlight->bottomCorner = (psrc_coord_3d){19.5, -20, 19.5};
-    psrc.gfx->updateLight(ambientlight->id);
-    float opm = psrc_main_test_posmult;
-    float orm = psrc_main_test_rotmult;
-    while (!psrc.gfx->winQuit()) {
-        uint64_t starttime = psrc.utime();
-        psrc_main_test();
-        camlight->pos = psrc.gfx->campos;
-        psrc.gfx->updateLight(camlight->id);
-        testobj1->rot.x = (float)glfwGetTime() * 90;
-        testobj1->rot.y = (float)glfwGetTime() * 90;
-        testobj1->rot.z = (float)glfwGetTime() * 90;
-        testobj2->rot.z = -(float)glfwGetTime() * 45;
-        psrc.gfx->renderObj(floor1);
-        psrc.gfx->renderObj(floor2);
-        psrc.gfx->renderObj(floor3);
-        psrc.gfx->renderObj(floor4);
-        psrc_main_test_renderObjAtFloors(testobj1);
-        psrc_main_test_renderObjAtFloors(testobj2);
-        psrc_main_test_renderObjAtFloors(testobj3);
-        psrc_main_test_renderObjAtFloors(testobj4);
-        psrc.gfx->updateScreen();
-        uint64_t delayoffset = psrc.utime() - starttime;
-        uint64_t delaytime = 1000000 / psrc.gfx->fps - delayoffset;
-        if (delaytime < 1000000 / psrc.gfx->fps) psrc.wait(delaytime);
-        float fpsmult = (float)(psrc.utime() - starttime) / (1000000.0f / 60.0f);
-        psrc_main_test_posmult = opm * fpsmult;
-        psrc_main_test_rotmult = orm * fpsmult;
-    }
+    if (chdir(psrc_main_pathfilename(psrc_startcmd))) {psrc.displayError(PSRC_ERR, "Fatal", "Could not find resources folder"); psrc_main_cleanExit(1);}
+    psrc_main_test();
     psrc_main_cleanExit(0);
     return 0;
 }

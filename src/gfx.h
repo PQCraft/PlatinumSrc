@@ -60,6 +60,8 @@ typedef struct {
     unsigned int win_width;
     unsigned int win_height;
     unsigned int fps;
+    bool vsync;
+    GLFWmonitor* monitor;
     GLFWwindow* window;
     psrc_coord_3d campos;
     psrc_coord_3d camrot;
