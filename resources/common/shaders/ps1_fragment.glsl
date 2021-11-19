@@ -20,10 +20,11 @@ struct material_struct {
     float resis;
 };
 
-in vec3 CurColor;
+noperspective in vec3 CurColor;
 in vec2 TexCoord;
 in vec3 Normal;  
 in vec3 FragPos;  
+in float vAffine;
 
 uniform sampler2D TexData;
 uniform int HasTex;
@@ -59,6 +60,8 @@ vec3 calcLight(int i) {
 }
 
 void main() {
+    //vec2 resolution = vec2(256, 240);
+    //FragPos.xy = round(resolution * FragPos.xy) / resolution;
     vec3 result = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < 64; ++i) {
         if (light[i].type != 0) result += calcLight(i);
@@ -66,6 +69,9 @@ void main() {
     result = mix(result, CurColor, material.resis);
     FragColor = vec4(result, 1.0);
     if (HasTex != 0) {
-        FragColor *= (texture(TexData, TexCoord) + (material.shine / 4096));
+        FragColor *= (texture(TexData, (TexCoord / vAffine)) + (material.shine / 4096));
     }
+    FragColor.r = float(int(FragColor.r * 255) >> 3 << 3) / 255;
+    FragColor.g = float(int(FragColor.g * 255) >> 3 << 3) / 255;
+    FragColor.b = float(int(FragColor.b * 255) >> 3 << 3) / 255;
 }

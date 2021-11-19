@@ -86,6 +86,8 @@ void psrc_gfx_renderObj(psrc_gfx_obj* obj) {
     psrc_gfx_setMat4(psrc_gfx.objsprog, "model", model);
     if (obj->texture) {
         glBindTexture(GL_TEXTURE_2D, obj->texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, psrc_gfx.texFarFilter);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, psrc_gfx.texNearFilter);
         glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "TexData"), 0);
         glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "HasTex"), 1);
         glDrawElements(GL_TRIANGLES, obj->trict, GL_UNSIGNED_INT, 0);
@@ -135,8 +137,6 @@ psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
         glGenTextures(1, &obj->texture);
         glBindTexture(GL_TEXTURE_2D, obj->texture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
         stbi_image_free(data);
@@ -159,11 +159,11 @@ void psrc_gfx_updateLight(int i) {
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sspecular", elem), (float[]){light->specular.r, light->specular.g, light->specular.b});
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sdirection", elem), (float[]){light->direction.x, light->direction.y, light->direction.z});
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%srange", elem), light->range);
-    psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%sconstant", elem), light->constant);
-    psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%slinear", elem), light->linear);
-    psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%squadratic", elem), light->quadratic);
-    psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%scutOff", elem), light->cutOff);
-    psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%souterCutOff", elem), light->outerCutOff);
+    //psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%sconstant", elem), light->constant);
+    //psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%slinear", elem), light->linear);
+    //psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%squadratic", elem), light->quadratic);
+    //psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%scutOff", elem), light->cutOff);
+    //psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%souterCutOff", elem), light->outerCutOff);
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%stcorner", elem), (float[]){light->topCorner.x, light->topCorner.y, light->topCorner.z});
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sbcorner", elem), (float[]){light->bottomCorner.x, light->bottomCorner.y, light->bottomCorner.z});
 }
@@ -253,10 +253,20 @@ bool psrc_gfx_makeShaderProg(char* vs, char* fs, GLuint* p) {
     return false;
 }
 
+bool psrc_gfx_changeShader(GLuint* sp, char* vs, char* fs) {
+    GLuint np = 0;
+    if (!psrc_gfx_makeShaderProg(vs, fs, &np)) return false;
+    glDeleteShader(*sp);
+    *sp = np;
+    glUseProgram(*sp);
+    return true;
+}
+
 psrc_gfx_struct* psrc_gfx_init() {
-    psrc_gfx = (psrc_gfx_struct){640, 480, 60, false, NULL, NULL, (psrc_coord_3d){0, 2, -4}, (psrc_coord_3d){0, 180, 0}, 50, 0, 0,
+    psrc_gfx = (psrc_gfx_struct){640, 480, 60, false, NULL, NULL, (psrc_coord_3d){0, 2, -4}, (psrc_coord_3d){0, 180, 0}, 50,
+        0, 0, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR,
         psrc_gfx_deinit, psrc_gfx_newObj, psrc_gfx_renderObj, psrc_gfx_getLight, psrc_gfx_getNextLight, psrc_gfx_updateLight,
-        psrc_gfx_updateScreen, psrc_gfx_updateCam, psrc_gfx_chkKey, psrc_gfx_winQuit};
+        psrc_gfx_updateScreen, psrc_gfx_updateCam, psrc_gfx_changeShader, psrc_gfx_chkKey, psrc_gfx_winQuit};
     if (psrc_gfx.fps == 0) {psrc_gfx.fps = 32767;}
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);

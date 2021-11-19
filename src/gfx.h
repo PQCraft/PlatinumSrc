@@ -68,6 +68,8 @@ typedef struct {
     float camfov;
     GLuint objsprog;
     GLuint lightsprog;
+    GLenum texNearFilter;
+    GLenum texFarFilter;
     void (*deinit)(void);
     psrc_gfx_obj* (*newObj)(psrc_coord_3d, psrc_coord_3d, psrc_coord_3d,
         float*, long unsigned int, unsigned int*, long unsigned int,
@@ -78,6 +80,7 @@ typedef struct {
     void (*updateLight)(int);
     void (*updateScreen)(void);
     void (*updateCam)(void);
+    bool (*changeShader)(GLuint*, char*, char*);
     int (*chkKey)(int);
     bool (*winQuit)(void);
 } psrc_gfx_struct;

@@ -149,6 +149,7 @@ void psrc_main_cleanExitSig(int sig) {
 float psrc_main_test_posmult = 0.25;
 float psrc_main_test_rotmult = 3;
 float psrc_main_test_fpsmult = 0;
+bool psrc_main_test_ps1gfx = false;
 
 void psrc_main_test_input() {
     float pmult = psrc_main_test_posmult;
@@ -357,6 +358,11 @@ void psrc_main_test() {
         0, 1, 3,
         1, 2, 3
     };
+    if (psrc_main_test_ps1gfx) {
+        psrc.gfx->changeShader(&psrc.gfx->objsprog, "resources/common/shaders/ps1_vertex.glsl", "resources/common/shaders/ps1_fragment.glsl");
+        psrc.gfx->texNearFilter = GL_NEAREST;
+        psrc.gfx->texFarFilter = GL_NEAREST;
+    }
     if (glfwRawMouseMotionSupported()) glfwSetInputMode(psrc.gfx->window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
     psrc_gfx_obj* testobj1 = psrc.gfx->newObj((psrc_coord_3d){0, 1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
         vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg", 256, 0);
@@ -366,6 +372,8 @@ void psrc_main_test() {
         vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16, 0);
     psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){0, 4, 4}, (psrc_coord_3d){-45, 0, 0}, (psrc_coord_3d){1.5, 1.5, 1.5},
         vertices, sizeof(vertices), indices, sizeof(indices), NULL, 256, 0);
+    psrc_gfx_obj* testobj5 = psrc.gfx->newObj((psrc_coord_3d){20, 3.8, 20}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){8, 8, 8},
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16, 0);
     psrc_gfx_light* camlight = psrc.gfx->getNextLight();
     psrc_gfx_obj* floor1 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
         vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/toxic.jpg", 0, 1);
@@ -437,6 +445,7 @@ void psrc_main_test() {
         testobj2->rot.z = -(float)glfwGetTime() * 45;
         testobj4->rot.x = (float)glfwGetTime() * 90;
         testobj4->rot.z = -(float)glfwGetTime() * 90;
+        testobj5->rot.y = -(float)glfwGetTime() * 45;
         psrc.gfx->renderObj(floor1);
         psrc.gfx->renderObj(floor2);
         psrc.gfx->renderObj(floor3);
@@ -445,6 +454,7 @@ void psrc_main_test() {
         psrc_main_test_renderObjAtFloors(testobj2);
         psrc_main_test_renderObjAtFloors(testobj3);
         psrc_main_test_renderObjAtFloors(testobj4);
+        psrc.gfx->renderObj(testobj5);
         if (!glfwGetWindowAttrib(psrc.gfx->window, GLFW_FOCUSED)) psrc.wait(1000000 / 15);
         psrc.gfx->updateScreen();
         uint64_t delayoffset = psrc.utime() - starttime;
