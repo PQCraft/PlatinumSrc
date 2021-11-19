@@ -30,7 +30,6 @@ Progress (checked = done, <- = being worked on):<br>
   - [ ] Loading alternate renderers from .so/.dll files
 - [ ] Game engine
   - [ ] Map loading
-  - [ ] Map loading
   - [ ] Physics
   - [ ] Loading games from .so/.dll files
 
