@@ -271,6 +271,8 @@ void psrc_main_test_renderObjAtFloors(psrc_gfx_obj* obj) {
 }
 
 void psrc_main_test() {
+    psrc.gfx->campos = (psrc_coord_3d){0, 0, 0};
+    psrc.gfx->camrot = (psrc_coord_3d){0, 180, 0};
     float vertices[] = {
         -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
          0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
@@ -328,13 +330,13 @@ void psrc_main_test() {
         30, 31, 32,
         33, 34, 35
     };
+    /*
     float vertices2[] = {
          0.8f,  0.8f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
          0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 0.0f,   1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
         -0.8f, -0.8f, 0.0f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
         -0.8f,  0.8f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,  0.0f,  0.0f, -1.0f
     };
-    /*
     float vertices3[] = {
          0.8f,  0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
          0.8f, -0.8f, 0.0f,   1.0f, 1.0f, 1.0f,   1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
@@ -364,17 +366,16 @@ void psrc_main_test() {
         psrc.gfx->texFarFilter = GL_NEAREST;
     }
     if (glfwRawMouseMotionSupported()) glfwSetInputMode(psrc.gfx->window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-    psrc_gfx_obj* testobj1 = psrc.gfx->newObj((psrc_coord_3d){0, 1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+    psrc_gfx_obj* testobj1 = psrc.gfx->newObj((psrc_coord_3d){7, 1.75, 7}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
         vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg", 256, 0);
-    psrc_gfx_obj* testobj2 = psrc.gfx->newObj((psrc_coord_3d){0, 0.05, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){2, 2, 2},
-        vertices2, sizeof(vertices2), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg", 256, 0);
-    psrc_gfx_obj* testobj3 = psrc.gfx->newObj((psrc_coord_3d){0, 0.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+    psrc_gfx_obj* testobj2 = psrc.gfx->newObj((psrc_coord_3d){0, -1.5, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){5, 4, 5},
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/brickwall.jpg", 256, 0);
+    psrc_gfx_obj* testobj3 = psrc.gfx->newObj((psrc_coord_3d){1, 1, 1}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
         vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16, 0);
-    psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){0, 4, 4}, (psrc_coord_3d){-45, 0, 0}, (psrc_coord_3d){1.5, 1.5, 1.5},
+    psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){-7, 1.75, 7}, (psrc_coord_3d){-45, 0, 0}, (psrc_coord_3d){1, 1, 1},
         vertices, sizeof(vertices), indices, sizeof(indices), NULL, 256, 0);
     psrc_gfx_obj* testobj5 = psrc.gfx->newObj((psrc_coord_3d){20, 3.8, 20}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){8, 8, 8},
         vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16, 0);
-    psrc_gfx_light* camlight = psrc.gfx->getNextLight();
     psrc_gfx_obj* floor1 = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
         vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/toxic.jpg", 0, 1);
     psrc_gfx_obj* floor2 = psrc.gfx->newObj((psrc_coord_3d){40, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
@@ -383,6 +384,7 @@ void psrc_main_test() {
         vertices5, sizeof(vertices5), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg", 0, 0);
     psrc_gfx_obj* floor4 = psrc.gfx->newObj((psrc_coord_3d){40, 0, 40}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
         vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/water.jpg", 0.5, 1);
+    psrc_gfx_light* camlight = psrc.gfx->getNextLight();
     camlight->type = 1;
     camlight->range = 0.8;
     camlight->diffuse = (psrc_color){0.75, 0.8, 0.75};
@@ -401,8 +403,8 @@ void psrc_main_test() {
     ambientlight->type = 2;
     ambientlight->range = 1;
     ambientlight->pos = (psrc_coord_3d){40, 20, 0};
-    ambientlight->ambient = (psrc_color){0.75, 0.7, 0.6};
-    ambientlight->diffuse = (psrc_color){0.9, 0.7, 0.6};
+    ambientlight->ambient = (psrc_color){0.55, 0.5, 0.4};
+    ambientlight->diffuse = (psrc_color){0.65, 0.6, 0.6};
     ambientlight->direction = (psrc_coord_3d){0, -180, 0};
     ambientlight->topCorner = (psrc_coord_3d){60, 20, 20};
     ambientlight->bottomCorner = (psrc_coord_3d){20, -20, -20};
@@ -421,31 +423,47 @@ void psrc_main_test() {
     ambientlight->type = 2;
     ambientlight->range = 1;
     ambientlight->pos = (psrc_coord_3d){0, 20, 40};
-    ambientlight->ambient = (psrc_color){0.41, 0.4175, 0.42};
-    ambientlight->ambient = (psrc_color){0.7, 0.7, 0.65};
-    ambientlight->diffuse = (psrc_color){0.2, 0.4, 0.38};
-    ambientlight->diffuse = (psrc_color){0.4, 0.4, 0.15};
-    ambientlight->direction = (psrc_coord_3d){0, 180, 0};
+    ambientlight->ambient = (psrc_color){0.6, 0.6, 0.65};
+    ambientlight->diffuse = (psrc_color){0.7, 0.7, 0.3};
     ambientlight->direction = (psrc_coord_3d){90, -180, 45};
     ambientlight->topCorner = (psrc_coord_3d){60, 20, 60};
     ambientlight->bottomCorner = (psrc_coord_3d){20, -20, 20};
     psrc.gfx->updateLight(ambientlight->id);
+    psrc.gfx->setMaxLight(5);
     float opm = psrc_main_test_posmult;
     float orm = psrc_main_test_rotmult;
     camlight->type = 0;
     psrc.sound->playMusic("resources/common/music/walk_in_the_woods.mp3");
+    float fpstimeval = -1;
+    int fpsct = 0;
+    int fpsbuf[5] = {0, 0, 0, 0, 0};
+    int fpsbufp = 0;
+    int fpsbufm = 0;
     while (!psrc.gfx->winQuit()) {
         uint64_t starttime = psrc.utime();
-        psrc_main_test_input();
         camlight->pos = psrc.gfx->campos;
         psrc.gfx->updateLight(camlight->id);
-        testobj1->rot.x = (float)glfwGetTime() * 90;
-        testobj1->rot.y = (float)glfwGetTime() * 90;
-        testobj1->rot.z = (float)glfwGetTime() * 90;
-        testobj2->rot.z = -(float)glfwGetTime() * 45;
-        testobj4->rot.x = (float)glfwGetTime() * 90;
-        testobj4->rot.z = -(float)glfwGetTime() * 90;
-        testobj5->rot.y = -(float)glfwGetTime() * 45;
+        float timeval = glfwGetTime();
+        if (fpstimeval < 0) fpstimeval = timeval;
+        if (timeval - fpstimeval >= 1) {
+            fpsbuf[fpsbufp] = fpsct;
+            if (fpsbufm < 3) ++fpsbufm;
+            int fpstotal = 0;
+            for (int i = 0, j = fpsbufp; i < fpsbufm; ++i) {
+                fpstotal += fpsbuf[j];
+                --j; if (j < 0) j = 2;
+            }
+            fpsbufp = (fpsbufp + 1) % 3;
+            printf("%d frames in %f seconds, %d FPS average\n", fpsct, timeval - fpstimeval, (fpstotal / fpsbufm + 2) / 5 * 5);
+            fpsct = 0;
+            fpstimeval = timeval;
+        }
+        testobj1->rot.x = timeval * 90;
+        testobj1->rot.y = timeval * 90;
+        testobj1->rot.z = timeval * 90;
+        testobj4->rot.x = timeval * 90;
+        testobj4->rot.z = -timeval * 90;
+        testobj5->rot.y = -timeval * 22.5;
         psrc.gfx->renderObj(floor1);
         psrc.gfx->renderObj(floor2);
         psrc.gfx->renderObj(floor3);
@@ -457,31 +475,37 @@ void psrc_main_test() {
         psrc.gfx->renderObj(testobj5);
         if (!glfwGetWindowAttrib(psrc.gfx->window, GLFW_FOCUSED)) psrc.wait(1000000 / 15);
         psrc.gfx->updateScreen();
+        ++fpsct;
         uint64_t delayoffset = psrc.utime() - starttime;
-        uint64_t delaytime = 1000000 / psrc.gfx->fps - delayoffset;
-        //printf("[%lu], [%lu], [%lu]\n", psrc.utime() - starttime, delayoffset, delaytime);
-        if (delaytime < 1000000 / psrc.gfx->fps) psrc.wait(delaytime);
-        psrc_main_test_fpsmult = (float)(psrc.utime() - starttime) / (1000000.0f / 60.0f);
+        if (psrc.gfx->fps) {
+            uint64_t delaytime = 1000000 / psrc.gfx->fps - delayoffset;
+            //printf("[%lu], [%lu], [%lu]\n", psrc.utime() - starttime, delayoffset, delaytime);
+            if (delaytime < 1000000 / psrc.gfx->fps) psrc.wait(delaytime);
+        }
         psrc_main_test_posmult = opm * psrc_main_test_fpsmult;
         psrc_main_test_rotmult = orm * psrc_main_test_fpsmult;
-        vertices4[7] += 0.005 * psrc_main_test_fpsmult;
-        vertices4[8] += 0.005 * psrc_main_test_fpsmult;
-        vertices4[18] += 0.005 * psrc_main_test_fpsmult;
-        vertices4[19] += 0.005 * psrc_main_test_fpsmult;
-        vertices4[29] += 0.005 * psrc_main_test_fpsmult;
-        vertices4[30] += 0.005 * psrc_main_test_fpsmult;
-        vertices4[40] += 0.005 * psrc_main_test_fpsmult;
-        vertices4[41] += 0.005 * psrc_main_test_fpsmult;
-        if (vertices4[7] >= 8.0) {
-            vertices4[7] -= 4.0;
-            vertices4[8] -= 4.0;
-            vertices4[18] -= 4.0;
-            vertices4[19] -= 4.0;
-            vertices4[29] -= 4.0;
-            vertices4[30] -= 4.0;
-            vertices4[40] -= 4.0;
-            vertices4[41] -= 4.0;
+        float initv = vertices4[7];
+        float waterspeed = 0.0025 * psrc_main_test_fpsmult;
+        vertices4[7] += waterspeed;
+        vertices4[8] += waterspeed;
+        vertices4[18] += waterspeed;
+        vertices4[19] += waterspeed;
+        vertices4[29] += waterspeed;
+        vertices4[30] += waterspeed;
+        vertices4[40] += waterspeed;
+        vertices4[41] += waterspeed;
+        if (vertices4[7] >= initv * 2) {
+            vertices4[7] -= initv;
+            vertices4[8] -= initv;
+            vertices4[18] -= initv;
+            vertices4[19] -= initv;
+            vertices4[29] -= initv;
+            vertices4[30] -= initv;
+            vertices4[40] -= initv;
+            vertices4[41] -= initv;
         }
+        psrc_main_test_input();
+        psrc_main_test_fpsmult = (float)(psrc.utime() - starttime) / (1000000.0f / 60.0f);
     }
 }
 

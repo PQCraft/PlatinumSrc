@@ -78,6 +78,7 @@ typedef struct {
     psrc_gfx_light* (*getLight)(int);
     psrc_gfx_light* (*getNextLight)(void);
     void (*updateLight)(int);
+    void (*setMaxLight)(int);
     void (*updateScreen)(void);
     void (*updateCam)(void);
     bool (*changeShader)(GLuint*, char*, char*);

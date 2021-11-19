@@ -6,6 +6,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <sys/stat.h>
+#include <assimp/cimport.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
@@ -60,8 +63,7 @@ void psrc_gfx_updateCam() {
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, "viewPos", (float[]){psrc_gfx.campos.x, psrc_gfx.campos.y, psrc_gfx.campos.z});
 }
 
-void psrc_gfx_renderObj(psrc_gfx_obj* obj) {
-    if (!obj) return;
+static inline void psrc_gfx_renderObjI(psrc_gfx_obj* obj) {
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, "material.shine", obj->material.shine);
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, "material.resis", obj->material.lightResistance);
     glBindVertexArray(obj->VAO);
@@ -98,6 +100,11 @@ void psrc_gfx_renderObj(psrc_gfx_obj* obj) {
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void psrc_gfx_renderObj(psrc_gfx_obj* obj) {
+    if (!obj) return;
+    psrc_gfx_renderObjI(obj);
 }
 
 void psrc_gfx_updateScreen() {
@@ -166,6 +173,12 @@ void psrc_gfx_updateLight(int i) {
     //psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%souterCutOff", elem), light->outerCutOff);
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%stcorner", elem), (float[]){light->topCorner.x, light->topCorner.y, light->topCorner.z});
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sbcorner", elem), (float[]){light->bottomCorner.x, light->bottomCorner.y, light->bottomCorner.z});
+}
+
+void psrc_gfx_setMaxLight(int i) {
+    if (i < 0) i = 0;
+    else if (i > 64) i = 64;
+    psrc_gfx_setUniform1i(psrc_gfx.objsprog, "maxlightindex", i);
 }
 
 psrc_gfx_light* psrc_gfx_getLight(int i) {
@@ -263,11 +276,10 @@ bool psrc_gfx_changeShader(GLuint* sp, char* vs, char* fs) {
 }
 
 psrc_gfx_struct* psrc_gfx_init() {
-    psrc_gfx = (psrc_gfx_struct){640, 480, 60, false, NULL, NULL, (psrc_coord_3d){0, 2, -4}, (psrc_coord_3d){0, 180, 0}, 50,
+    psrc_gfx = (psrc_gfx_struct){640, 480, 0, false, NULL, NULL, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, 50,
         0, 0, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR,
         psrc_gfx_deinit, psrc_gfx_newObj, psrc_gfx_renderObj, psrc_gfx_getLight, psrc_gfx_getNextLight, psrc_gfx_updateLight,
-        psrc_gfx_updateScreen, psrc_gfx_updateCam, psrc_gfx_changeShader, psrc_gfx_chkKey, psrc_gfx_winQuit};
-    if (psrc_gfx.fps == 0) {psrc_gfx.fps = 32767;}
+        psrc_gfx_setMaxLight, psrc_gfx_updateScreen, psrc_gfx_updateCam, psrc_gfx_changeShader, psrc_gfx_chkKey, psrc_gfx_winQuit};
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -299,8 +311,6 @@ psrc_gfx_struct* psrc_gfx_init() {
     psrc_gfx_aspect = (float)psrc_gfx.win_width / (float)psrc_gfx.win_height;
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glEnable(GL_DEPTH_CLAMP);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glClearColor(0, 0, 0, 1);
@@ -309,5 +319,8 @@ psrc_gfx_struct* psrc_gfx_init() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glfwSwapBuffers(psrc_gfx.window);
     glfwPollEvents();
+    C_STRUCT aiLogStream astream;
+	astream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT,NULL);
+	aiAttachLogStream(&astream);
     return &psrc_gfx;
 }

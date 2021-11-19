@@ -7,7 +7,7 @@ endif
 PBINFLAGS := -L. -L./src/lib -Llib -g
 BINFLAGS := -lpthread -lm -lSDL2 -lSDL2_mixer
 ifndef OS
-BINFLAGS := $(BINFLAGS) -lglfw -ldl -lGL
+BINFLAGS := $(BINFLAGS) -lglfw -ldl -lGL -lassimp
 else
 BINFLAGS := $(BINFLAGS) -lmingw32 -lSDL2main -lopengl32
 endif

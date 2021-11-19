@@ -22,8 +22,8 @@ struct material_struct {
 
 noperspective in vec3 CurColor;
 in vec2 TexCoord;
-in vec3 Normal;  
 in vec3 FragPos;  
+in vec3 Normal;  
 in float vAffine;
 
 uniform sampler2D TexData;
@@ -32,6 +32,7 @@ uniform vec3 viewPos;
 
 uniform light_struct light[64];
 uniform material_struct material;
+uniform int maxlightindex;
 
 vec3 v3zero = vec3(0, 0, 0);
 vec3 v3one = vec3(1, 1, 1);
@@ -60,10 +61,8 @@ vec3 calcLight(int i) {
 }
 
 void main() {
-    //vec2 resolution = vec2(256, 240);
-    //FragPos.xy = round(resolution * FragPos.xy) / resolution;
     vec3 result = vec3(0.0, 0.0, 0.0);
-    for (int i = 0; i < 64; ++i) {
+    for (int i = 0; i < maxlightindex; ++i) {
         if (light[i].type != 0) result += calcLight(i);
     }
     result = mix(result, CurColor, material.resis);
