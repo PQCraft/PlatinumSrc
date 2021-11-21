@@ -149,7 +149,7 @@ void psrc_main_cleanExitSig(int sig) {
 float psrc_main_test_posmult = 0.25;
 float psrc_main_test_rotmult = 3;
 float psrc_main_test_fpsmult = 0;
-bool psrc_main_test_ps1gfx = true;
+bool psrc_main_test_ps1gfx = false;
 bool psrc_main_test_fpsct = false;
 
 void psrc_main_test_input() {

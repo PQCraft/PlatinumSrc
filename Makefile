@@ -25,7 +25,7 @@ ifdef OS
 CC = gcc
 endif
 
-.PHONY: all build run clean
+.PHONY: all build run clean $(OBJ)
 
 all: run
 
@@ -41,12 +41,14 @@ $(BIN): $(OBJECTS)
 	@$(CC) -o $@ $(PBINFLAGS) $^ $(BINFLAGS)
 	@echo "Built binary \"$@\""
 
-$(OBJ)/%.o: $(SRC)/%.c $(DEPENDS)
+$(OBJ):
 ifndef OS
 	@[ ! -d $(OBJ) ] && mkdir -p $(OBJ); true
 else
 	@if not exist $(OBJ) mkdir $(OBJ)
 endif
+
+$(OBJ)/%.o: $(SRC)/%.c $(DEPENDS) $(OBJ)
 	@echo "Compiling object \"$@\" from \"$<\""
 	@$(CC) -o $@ $(POBJFLAGS) -c $< $(OBJFLAGS)
 	@echo "Compiled object \"$@\""
