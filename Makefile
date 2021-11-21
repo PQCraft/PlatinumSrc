@@ -48,7 +48,7 @@ else
 	@if not exist $(OBJ) mkdir $(OBJ)
 endif
 
-$(OBJ)/%.o: $(SRC)/%.c $(DEPENDS) $(OBJ)
+$(OBJ)/%.o: $(SRC)/%.c $(DEPENDS) | $(OBJ)
 	@echo "Compiling object \"$@\" from \"$<\""
 	@$(CC) -o $@ $(POBJFLAGS) -c $< $(OBJFLAGS)
 	@echo "Compiled object \"$@\""
