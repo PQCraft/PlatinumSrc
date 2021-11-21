@@ -4,14 +4,14 @@ else
 BIN := psrc.exe
 endif
 
-PBINFLAGS := -L. -L./src/lib -Llib -g
+PBINFLAGS := -L. -L./src/lib -Llib -g -Ofast
 BINFLAGS := -lpthread -lm -lSDL2 -lSDL2_mixer
 ifndef OS
 BINFLAGS := $(BINFLAGS) -lglfw -ldl -lGL -lassimp
 else
 BINFLAGS := $(BINFLAGS) -lmingw32 -lSDL2main -lopengl32
 endif
-POBJFLAGS := -Wall -Wextra -I. -I./src/include -Ilib -g
+POBJFLAGS := -Wall -Wextra -I. -I./src/include -Ilib -g -Ofast
 OBJFLAGS := 
 
 SRC := src
@@ -34,10 +34,12 @@ build: $(BIN)
 run: $(BIN)
 	@echo "Running binary \"./$<\""
 	@./$<
+	@echo "\"./$<\" exited successfully"
 
 $(BIN): $(OBJECTS)
 	@echo "Building binary \"$@\" from \"$^\""
 	@$(CC) -o $@ $(PBINFLAGS) $^ $(BINFLAGS)
+	@echo "Built binary \"$@\""
 
 $(OBJ)/%.o: $(SRC)/%.c $(DEPENDS)
 ifndef OS
@@ -47,6 +49,7 @@ else
 endif
 	@echo "Compiling object \"$@\" from \"$<\""
 	@$(CC) -o $@ $(POBJFLAGS) -c $< $(OBJFLAGS)
+	@echo "Compiled object \"$@\""
 
 clean:
 ifndef OS

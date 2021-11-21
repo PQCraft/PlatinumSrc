@@ -49,7 +49,7 @@ void psrc_gfx_setUniform1i(GLuint prog, char* name, GLint val) {
 
 void psrc_gfx_updateCam() {
     mat4 view, projection;
-    glm_perspective(psrc_gfx.camfov * M_PI / 180, psrc_gfx_aspect, 0.01, 2048, projection);
+    glm_perspective(psrc_gfx.camfov * M_PI / 180, psrc_gfx_aspect, 0.075, 2048, projection);
     psrc_gfx_setMat4(psrc_gfx.objsprog, "projection", projection);
     vec3 direction = {cosf((psrc_gfx.camrot.y - 90) * M_PI / 180) * cosf(psrc_gfx.camrot.x * M_PI / 180),
         sin(psrc_gfx.camrot.x * M_PI / 180),
@@ -153,12 +153,51 @@ psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
     return obj;
 }
 
+psrc_gfx_obj* psrc_gfx_loadObj(char* m, int mi, char* t, float shine, float resis) {
+    const struct aiScene* scene = aiImportFile(m, aiProcess_Triangulate);
+    if (scene->mNumMeshes < 1) {aiReleaseImport(scene); return NULL;}
+    struct aiMesh* mesh = scene->mMeshes[mi];
+    long unsigned int vsize = 11 * mesh->mNumVertices * sizeof(float);
+    float* vertices = malloc(vsize);
+    long unsigned int vct = 0;
+    for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
+        vertices[vct++] = mesh->mVertices[i].x;
+        vertices[vct++] = mesh->mVertices[i].y;
+        vertices[vct++] = mesh->mVertices[i].z;
+        vertices[vct++] = 1;
+        vertices[vct++] = 1;
+        vertices[vct++] = 1;
+        vertices[vct++] = mesh->mTextureCoords[0][i].x;
+        vertices[vct++] = mesh->mTextureCoords[0][i].y;
+        vertices[vct++] = mesh->mNormals[i].x;
+        vertices[vct++] = mesh->mNormals[i].y;
+        vertices[vct++] = mesh->mNormals[i].z;
+    }
+    long unsigned int isize = 3 * mesh->mNumFaces * sizeof(unsigned int);
+    unsigned int* indices = malloc(isize);
+    long unsigned int ict = 0;
+    for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
+        indices[ict++] = mesh->mFaces[i].mIndices[0];
+        indices[ict++] = mesh->mFaces[i].mIndices[1];
+        indices[ict++] = mesh->mFaces[i].mIndices[2];
+    }
+    psrc_gfx_obj* obj = psrc_gfx_newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
+        vertices, vsize, indices, isize, t, shine, resis);
+    obj->autofreev = true;
+    obj->autofreei = true;
+    obj->scene = scene;
+    return obj;
+}
+
 psrc_gfx_light psrc_gfx_lightstack[64];
 
 void psrc_gfx_updateLight(int i) {
     char elem[16] = {0};
     sprintf(elem, "light[%d].", i);
     psrc_gfx_light* light = &psrc_gfx_lightstack[i];
+    if (light->bottomCorner.x > light->topCorner.x) PSRC_SWAP(light->bottomCorner.x, light->topCorner.x);
+    if (light->bottomCorner.y > light->topCorner.y) PSRC_SWAP(light->bottomCorner.y, light->topCorner.y);
+    if (light->bottomCorner.z > light->topCorner.z) PSRC_SWAP(light->bottomCorner.z, light->topCorner.z);
     psrc_gfx_setUniform1i(psrc_gfx.objsprog, psrc.getFText("%stype", elem), light->type);
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sposition", elem), (float[]){light->pos.x, light->pos.y, light->pos.z});
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sambient", elem), (float[]){light->ambient.r, light->ambient.g, light->ambient.b});
@@ -276,9 +315,9 @@ bool psrc_gfx_changeShader(GLuint* sp, char* vs, char* fs) {
 }
 
 psrc_gfx_struct* psrc_gfx_init() {
-    psrc_gfx = (psrc_gfx_struct){640, 480, 0, false, NULL, NULL, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, 50,
+    psrc_gfx = (psrc_gfx_struct){640, 480, 0, true, NULL, NULL, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, 50,
         0, 0, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR,
-        psrc_gfx_deinit, psrc_gfx_newObj, psrc_gfx_renderObj, psrc_gfx_getLight, psrc_gfx_getNextLight, psrc_gfx_updateLight,
+        psrc_gfx_deinit, psrc_gfx_newObj, psrc_gfx_loadObj, psrc_gfx_renderObj, psrc_gfx_getLight, psrc_gfx_getNextLight, psrc_gfx_updateLight,
         psrc_gfx_setMaxLight, psrc_gfx_updateScreen, psrc_gfx_updateCam, psrc_gfx_changeShader, psrc_gfx_chkKey, psrc_gfx_winQuit};
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);

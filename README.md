@@ -19,14 +19,14 @@ Progress (checked = done, <- = being worked on):<br>
   - [ ] In-game UI rendering
   - [X] Objects
   - [ ] Object render stack **<-**
-  - [ ] 2D
+  - [X] 2D
     - [X] Shapes
     - [X] Coloring
     - [X] Texturing
-  - [ ] 3D <-
+  - [X] 3D
     - [X] Lighting
     - [X] Shading
-    - [ ] Object loading **<-**
+    - [X] Object loading
   - [ ] Loading alternate renderers from .so/.dll files
 - [ ] Game engine
   - [ ] Map loading

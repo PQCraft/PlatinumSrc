@@ -28,14 +28,17 @@ typedef struct {
     psrc_coord_3d pos;
     psrc_coord_3d rot;
     psrc_coord_3d scale;
-    float* vertices;
     long unsigned int trict;
+    float* vertices;
     long unsigned int vsize;
+    bool autofreev;
     unsigned int* indices;
     long unsigned int isize;
+    bool autofreei;
     unsigned int VBO, VAO, EBO;
     unsigned int texture;
     psrc_gfx_material material;
+    const void* scene;
 } psrc_gfx_obj;
 
 typedef struct {
@@ -74,6 +77,7 @@ typedef struct {
     psrc_gfx_obj* (*newObj)(psrc_coord_3d, psrc_coord_3d, psrc_coord_3d,
         float*, long unsigned int, unsigned int*, long unsigned int,
         char*, float, float);
+    psrc_gfx_obj* (*loadObj)(char*, int, char*, float, float);
     void (*renderObj)(psrc_gfx_obj*);
     psrc_gfx_light* (*getLight)(int);
     psrc_gfx_light* (*getNextLight)(void);
