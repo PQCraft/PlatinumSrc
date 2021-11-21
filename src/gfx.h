@@ -42,6 +42,15 @@ typedef struct {
 } psrc_gfx_obj;
 
 typedef struct {
+    psrc_gfx_obj* top;
+    psrc_gfx_obj* bottom;
+    psrc_gfx_obj* left;
+    psrc_gfx_obj* front;
+    psrc_gfx_obj* right;
+    psrc_gfx_obj* back;
+} psrc_gfx_skybox;
+
+typedef struct {
     int id;
     int type;
     psrc_coord_3d pos;
@@ -74,17 +83,20 @@ typedef struct {
     GLenum texNearFilter;
     GLenum texFarFilter;
     void (*deinit)(void);
-    psrc_gfx_obj* (*newObj)(psrc_coord_3d, psrc_coord_3d, psrc_coord_3d,
-        float*, long unsigned int, unsigned int*, long unsigned int,
-        char*, float, float);
-    psrc_gfx_obj* (*loadObj)(char*, int, char*, float, float);
-    void (*renderObj)(psrc_gfx_obj*);
+    void (*updateCam)(void);
+    psrc_gfx_skybox* (*newSkybox)(char*, char*);
+    void (*setSkybox)(psrc_gfx_skybox*);
     psrc_gfx_light* (*getLight)(int);
     psrc_gfx_light* (*getNextLight)(void);
     void (*updateLight)(int);
     void (*setMaxLight)(int);
-    void (*updateScreen)(void);
-    void (*updateCam)(void);
+    psrc_gfx_obj* (*newObj)(psrc_coord_3d, psrc_coord_3d, psrc_coord_3d,
+        float*, long unsigned int, unsigned int*, long unsigned int,
+        char*, float, float);
+    psrc_gfx_obj* (*loadObj)(char*, int, char*, float, float);
+    void (*pushObj)(psrc_gfx_obj*);
+    psrc_gfx_obj (*popObj)(void);
+    void (*render)(void);
     bool (*changeShader)(GLuint*, char*, char*);
     int (*chkKey)(int);
     bool (*winQuit)(void);

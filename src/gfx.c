@@ -14,8 +14,19 @@
 #define M_PI 3.14159265358979323846264338327950288
 #endif
 
+
 psrc_gfx_struct psrc_gfx;
 float psrc_gfx_aspect;
+
+float psrc_gfx_skyboxvertices[] = {
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  1.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  1.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  1.0f,  0.0f,
+};
+unsigned int psrc_gfx_skyboxindices[] = {
+    0, 1, 2, 2, 3, 0
+};
 
 void psrc_gfx_setUniform1f(GLuint prog, char* name, float val) {
     int uHandle = glGetUniformLocation(prog, name);
@@ -63,7 +74,7 @@ void psrc_gfx_updateCam() {
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, "viewPos", (float[]){psrc_gfx.campos.x, psrc_gfx.campos.y, psrc_gfx.campos.z});
 }
 
-static inline void psrc_gfx_renderObjI(psrc_gfx_obj* obj) {
+static inline void psrc_gfx_renderObj(psrc_gfx_obj* obj) {
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, "material.shine", obj->material.shine);
     psrc_gfx_setUniform1f(psrc_gfx.objsprog, "material.resis", obj->material.lightResistance);
     glBindVertexArray(obj->VAO);
@@ -88,8 +99,6 @@ static inline void psrc_gfx_renderObjI(psrc_gfx_obj* obj) {
     psrc_gfx_setMat4(psrc_gfx.objsprog, "model", model);
     if (obj->texture) {
         glBindTexture(GL_TEXTURE_2D, obj->texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, psrc_gfx.texFarFilter);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, psrc_gfx.texNearFilter);
         glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "TexData"), 0);
         glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "HasTex"), 1);
         glDrawElements(GL_TRIANGLES, obj->trict, GL_UNSIGNED_INT, 0);
@@ -102,15 +111,39 @@ static inline void psrc_gfx_renderObjI(psrc_gfx_obj* obj) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void psrc_gfx_renderObj(psrc_gfx_obj* obj) {
-    if (!obj) return;
-    psrc_gfx_renderObjI(obj);
-}
+psrc_gfx_skybox* psrc_gfx_skyboxptr = NULL;
 
-void psrc_gfx_updateScreen() {
+psrc_gfx_obj psrc_gfx_objstack[4096];
+unsigned int psrc_gfx_objstackp = 0;
+
+void psrc_gfx_render() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (psrc_gfx_skyboxptr) {
+        psrc_coord_3d ocp = psrc_gfx.campos;
+        psrc_gfx.campos = (psrc_coord_3d){0, 0, 0};
+        psrc_gfx_updateCam();
+        glDisable(GL_DEPTH_TEST);
+        psrc_gfx_renderObj(psrc_gfx_skyboxptr->top);
+        psrc_gfx_renderObj(psrc_gfx_skyboxptr->bottom);
+        psrc_gfx_renderObj(psrc_gfx_skyboxptr->left);
+        psrc_gfx_renderObj(psrc_gfx_skyboxptr->front);
+        psrc_gfx_renderObj(psrc_gfx_skyboxptr->right);
+        psrc_gfx_renderObj(psrc_gfx_skyboxptr->back);
+        glEnable(GL_DEPTH_TEST);
+        psrc_gfx.campos = ocp;
+        psrc_gfx_updateCam();
+    }
+    while (psrc_gfx_objstackp) {psrc_gfx_renderObj(&psrc_gfx_objstack[--psrc_gfx_objstackp]);}
     glfwSwapInterval(psrc_gfx.vsync);
     glfwSwapBuffers(psrc_gfx.window);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void psrc_gfx_pushObj(psrc_gfx_obj* obj) {
+    psrc_gfx_objstack[psrc_gfx_objstackp++] = *obj;
+}
+
+psrc_gfx_obj psrc_gfx_popObj() {
+    return psrc_gfx_objstack[--psrc_gfx_objstackp];
 }
 
 bool psrc_gfx_winQuit() {glfwPollEvents(); return glfwWindowShouldClose(psrc_gfx.window) || psrc.quitRequested;}
@@ -144,7 +177,49 @@ psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
         glGenTextures(1, &obj->texture);
         glBindTexture(GL_TEXTURE_2D, obj->texture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, psrc_gfx.texFarFilter);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, psrc_gfx.texNearFilter);
         glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        stbi_image_free(data);
+    } else {
+        obj->texture = 0;
+    }
+    return obj;
+}
+
+psrc_gfx_obj* psrc_gfx_newSbObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s, char* t) {
+    int width, height, nrChannels;
+    unsigned char* data;
+    if (t) {
+        data = stbi_load(t, &width, &height, &nrChannels, 0);
+        if (!data) data = stbi_load("resources/base/textures/base.bmp", &width, &height, &nrChannels, 0);
+        if (!data) t = NULL;
+    }
+    psrc_gfx_obj* obj = malloc(sizeof(psrc_gfx_obj));
+    memset(obj, 0, sizeof(psrc_gfx_obj));
+    glGenVertexArrays(1, &obj->VAO);
+    glGenBuffers(1, &obj->VBO);
+    glGenBuffers(1, &obj->EBO);
+    obj->pos = p;
+    obj->rot = r;
+    obj->scale = s;
+    obj->vertices = psrc_gfx_skyboxvertices;
+    obj->vsize = sizeof(psrc_gfx_skyboxvertices);
+    obj->indices = psrc_gfx_skyboxindices;
+    obj->isize = sizeof(psrc_gfx_skyboxindices);
+    obj->trict = obj->isize / sizeof(*psrc_gfx_skyboxindices);
+    obj->material.shine = 0;
+    obj->material.lightResistance = 1;
+    if (t) {
+        glGenTextures(1, &obj->texture);
+        glBindTexture(GL_TEXTURE_2D, obj->texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
         glBindTexture(GL_TEXTURE_2D, 0);
         stbi_image_free(data);
     } else {
@@ -212,6 +287,22 @@ void psrc_gfx_updateLight(int i) {
     //psrc_gfx_setUniform1f(psrc_gfx.objsprog, psrc.getFText("%souterCutOff", elem), light->outerCutOff);
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%stcorner", elem), (float[]){light->topCorner.x, light->topCorner.y, light->topCorner.z});
     psrc_gfx_setUniform3f(psrc_gfx.objsprog, psrc.getFText("%sbcorner", elem), (float[]){light->bottomCorner.x, light->bottomCorner.y, light->bottomCorner.z});
+}
+
+psrc_gfx_skybox* psrc_gfx_newSkybox(char* prefix, char* suffix) {
+    static int sbs = 2;
+    psrc_gfx_skybox* sb = malloc(sizeof(psrc_gfx_skybox));
+    sb->top = psrc_gfx_newSbObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){sbs, sbs, sbs}, psrc.getFText("%s0%s", prefix, suffix));
+    sb->bottom = psrc_gfx_newSbObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){180, 0, 0}, (psrc_coord_3d){sbs, sbs, sbs}, psrc.getFText("%s1%s", prefix, suffix));
+    sb->left = psrc_gfx_newSbObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 270}, (psrc_coord_3d){sbs, sbs, sbs}, psrc.getFText("%s2%s", prefix, suffix));
+    sb->front = psrc_gfx_newSbObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){sbs, sbs, sbs}, psrc.getFText("%s3%s", prefix, suffix));
+    sb->right = psrc_gfx_newSbObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 90}, (psrc_coord_3d){sbs, sbs, sbs}, psrc.getFText("%s4%s", prefix, suffix));
+    sb->back = psrc_gfx_newSbObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){90, 0, 180}, (psrc_coord_3d){sbs, sbs, sbs}, psrc.getFText("%s5%s", prefix, suffix));
+    return sb;
+}
+
+void psrc_gfx_setSkybox(psrc_gfx_skybox* sb) {
+    psrc_gfx_skyboxptr = sb;
 }
 
 void psrc_gfx_setMaxLight(int i) {
@@ -316,9 +407,10 @@ bool psrc_gfx_changeShader(GLuint* sp, char* vs, char* fs) {
 
 psrc_gfx_struct* psrc_gfx_init() {
     psrc_gfx = (psrc_gfx_struct){640, 480, 0, true, NULL, NULL, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, 50,
-        0, 0, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR,
-        psrc_gfx_deinit, psrc_gfx_newObj, psrc_gfx_loadObj, psrc_gfx_renderObj, psrc_gfx_getLight, psrc_gfx_getNextLight, psrc_gfx_updateLight,
-        psrc_gfx_setMaxLight, psrc_gfx_updateScreen, psrc_gfx_updateCam, psrc_gfx_changeShader, psrc_gfx_chkKey, psrc_gfx_winQuit};
+        0, 0, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, psrc_gfx_deinit,
+        psrc_gfx_updateCam, psrc_gfx_newSkybox, psrc_gfx_setSkybox, psrc_gfx_getLight, psrc_gfx_getNextLight,
+        psrc_gfx_updateLight, psrc_gfx_setMaxLight, psrc_gfx_newObj, psrc_gfx_loadObj, psrc_gfx_pushObj, psrc_gfx_popObj,
+        psrc_gfx_render, psrc_gfx_changeShader, psrc_gfx_chkKey, psrc_gfx_winQuit};
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -357,9 +449,10 @@ psrc_gfx_struct* psrc_gfx_init() {
     glfwSwapBuffers(psrc_gfx.window);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glfwSwapBuffers(psrc_gfx.window);
+    psrc_gfx_updateCam();
     glfwPollEvents();
     C_STRUCT aiLogStream astream;
-	astream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT,NULL);
+	astream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, NULL);
 	aiAttachLogStream(&astream);
     return &psrc_gfx;
 }

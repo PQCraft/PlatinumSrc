@@ -206,8 +206,8 @@ void psrc_main_test_input() {
         if (!mposset) {glfwGetCursorPos(psrc.gfx->window, &mxpos, &mypos); mposset = true;}
         static double nmxpos, nmypos;
         glfwGetCursorPos(psrc.gfx->window, &nmxpos, &nmypos);
-        psrc.gfx->camrot.x += (mypos - nmypos) * 0.0314 * rmult;
-        psrc.gfx->camrot.y -= (mxpos - nmxpos) * 0.0314 * rmult;
+        psrc.gfx->camrot.x += (mypos - nmypos) * 0.125 * rmult / psrc_main_test_rotmult;
+        psrc.gfx->camrot.y -= (mxpos - nmxpos) * 0.125 * rmult / psrc_main_test_rotmult;
         if (psrc.gfx->camrot.y < -360) psrc.gfx->camrot.y += 360;
         else if (psrc.gfx->camrot.y > 360) psrc.gfx->camrot.y -= 360;
         if (psrc.gfx->camrot.x > 89.99) psrc.gfx->camrot.x = 89.99;
@@ -269,14 +269,14 @@ void psrc_main_test_input() {
 void psrc_main_test_renderObjAtFloors(psrc_gfx_obj* obj) {
     obj->pos.x -= 20;
     obj->pos.z -= 20;
-    psrc.gfx->renderObj(obj);
+    psrc.gfx->pushObj(obj);
     obj->pos.x += 40;
-    psrc.gfx->renderObj(obj);
+    psrc.gfx->pushObj(obj);
     obj->pos.x -= 40;
     obj->pos.z += 40;
-    psrc.gfx->renderObj(obj);
+    psrc.gfx->pushObj(obj);
     obj->pos.x += 40;
-    psrc.gfx->renderObj(obj);
+    psrc.gfx->pushObj(obj);
     obj->pos.x -= 40;
     obj->pos.z -= 40;
     obj->pos.x += 20;
@@ -402,6 +402,7 @@ void psrc_main_test() {
     psrc_gfx_obj* floor4 = psrc.gfx->newObj((psrc_coord_3d){20, 0, 20}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
         vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/water.jpg", 0.5, 1);
     psrc_gfx_light* camlight = psrc.gfx->getNextLight();
+    psrc.gfx->setSkybox(psrc.gfx->newSkybox("/home/pqcraft/Documents/PlatinumSrc/resources/common/textures/skybox1/", ".bmp"));
     camlight->type = 1;
     camlight->range = 0.8;
     camlight->diffuse = (psrc_color){0.75, 0.8, 0.75};
@@ -489,11 +490,11 @@ void psrc_main_test() {
         modelp1->rot.y = -timeval * 22.5;
         modelp2->rot.y = -timeval * 22.5;
         modelp3->rot.y = -timeval * 22.5;
-        psrc.gfx->renderObj(floor1);
-        psrc.gfx->renderObj(floor2);
-        psrc.gfx->renderObj(floor3);
-        psrc.gfx->renderObj(floor4);
-        psrc.gfx->renderObj(testobj5);
+        psrc.gfx->pushObj(floor1);
+        psrc.gfx->pushObj(floor2);
+        psrc.gfx->pushObj(floor3);
+        psrc.gfx->pushObj(floor4);
+        psrc.gfx->pushObj(testobj5);
         psrc_main_test_renderObjAtFloors(testobj1);
         psrc_main_test_renderObjAtFloors(testobj3);
         psrc_main_test_renderObjAtFloors(testobj4);
@@ -501,7 +502,7 @@ void psrc_main_test() {
         psrc_main_test_renderObjAtFloors(modelp2);
         psrc_main_test_renderObjAtFloors(modelp3);
         if (!glfwGetWindowAttrib(psrc.gfx->window, GLFW_FOCUSED)) psrc.wait(1000000 / 15);
-        psrc.gfx->updateScreen();
+        psrc.gfx->render();
         uint64_t delayoffset = psrc.utime() - starttime;
         if (psrc_main_test_fpsct) {
             ++fpsct;
