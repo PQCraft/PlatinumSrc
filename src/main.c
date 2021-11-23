@@ -287,6 +287,16 @@ float psrc_main_test_mousesns = 0.125;
 void psrc_main_test_input() {
     float pmult = psrc_main_test_posmult;
     float rmult = psrc_main_test_rotmult;
+    static bool setui = false;
+    if (!setui && psrc.gfx->chkKey(GLFW_KEY_ESCAPE)) {
+        if (!psrc.ui->shown) {
+            psrc.ui->showUI();
+        } else {
+            psrc.ui->hideUI();
+        }
+    } else {
+        setui = false;
+    }
     static int fullscreen = -1;
     if (fullscreen == -1) fullscreen = psrc.gfx->fullscr;
     static bool setfullscr = false;
@@ -604,8 +614,8 @@ void psrc_main_test() {
                 }
                 fpsbufp = (fpsbufp + 1) % 3;
                 uint64_t avgrendtime = rendtime / fpsct;
-                printf("%d frames in %f seconds, %d FPS average, %.*f millisecond average render time\n",
-                    fpsct, timeval - fpstimeval, (fpstotal / fpsbufm + 2) / 5 * 5, 3, (float)avgrendtime / 1000);
+                printf("%d frames in %f seconds, %d - %d FPS average, %.*f millisecond average render time\n",
+                    fpsct, timeval - fpstimeval, (fpstotal / fpsbufm - 4) / 5 * 5, (fpstotal / fpsbufm + 6) / 5 * 5, 3, (float)avgrendtime / 1000);
                 fpsct = 0;
                 rendtime = 0;
                 fpstimeval = timeval;
@@ -619,6 +629,8 @@ void psrc_main_test() {
         modelp1->rot.y = -timeval * 22.5;
         modelp2->rot.y = -timeval * 22.5;
         modelp3->rot.y = -timeval * 22.5;
+        testobj5->pos.y = 10 + sin(timeval) * 1.5;
+        testobj5->rot.y = timeval * 45;
         psrc.gfx->pushObj(floor1);
         psrc.gfx->pushObj(floor2);
         psrc.gfx->pushObj(floor3);

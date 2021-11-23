@@ -35,7 +35,10 @@ typedef struct {
     void (*closeDialog)(int);
     void (*pushToFront)(int);
     void (*pushToBack)(int);
+    void (*showUI)(void);
+    void (*hideUI)(void);
     void (*deinit)(void);
+    bool shown;
 } psrc_ui_struct;
 
 psrc_ui_struct* psrc_ui_init();

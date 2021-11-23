@@ -38,36 +38,39 @@ void psrc_ui_renderElem(int id, unsigned x, unsigned y, unsigned w, unsigned h) 
 }
 
 void psrc_ui_renderWindowBase(bool tbar, char* title, bool logo, bool close, unsigned x, unsigned y, unsigned w, unsigned h) {
-    h += 24;
     (void)title;
     if (tbar) {
         psrc_ui_renderElem(4, x, y, w, 24);
         psrc_ui_renderElem(3, x, y, 24, 24);
         psrc_ui_renderElem(5, x + w - 24, y, 24, 24);
+        y += 24;
     }
-    psrc_ui_renderElem(0, x, y + 24 * tbar, w, h - 24);
+    psrc_ui_renderElem(0, x, y, w, h);
     if (!tbar) {
         psrc_ui_renderElem(6, x, y, w, 1);
     }
-    psrc_ui_renderElem(7, x, y - 1 + h - 24 * !tbar, w, 1);
-    psrc_ui_renderElem(8, x, y + 24 * tbar, 1, h - 24);
-    psrc_ui_renderElem(9, x + w - 1, y + 24 * tbar, 1, h - 24);
-    if (tbar && logo) psrc_ui_renderElem(1, x + 4, y + 4, 16, 16);
-    if (tbar && close) psrc_ui_renderElem(2, x + w - 20, y + 4, 16, 16);
+    psrc_ui_renderElem(7, x, y + h - 1, w, 1);
+    psrc_ui_renderElem(8, x, y, 1, h);
+    psrc_ui_renderElem(9, x + w - 1, y, 1, h);
+    if (tbar) {
+        if (logo) psrc_ui_renderElem(1, x + 4, y - 20, 16, 16);
+        if (close) psrc_ui_renderElem(2, x + w - 20, y - 20, 16, 16);
+    }
 }
 
 int psrc_ui_renderHookTestI = 0;
 uint64_t psrc_ui_renderHookTime = 0;
 
 void psrc_ui_renderHook() {
+    if (!psrc_ui.shown) return;
     static bool setHookTime = false;
     if (!setHookTime) {psrc_ui_renderHookTime = psrc.utime(); setHookTime = true;}
     switch (psrc_ui_renderHookTestI) {
-        case 0:; psrc_ui_renderWindowBase(true, "test", true, true, 10, 10, 160, 120); break;
-        case 1:; psrc_ui_renderWindowBase(true, "test", false, true, 10, 10, 160, 120); break;
-        case 2:; psrc_ui_renderWindowBase(true, "test", true, false, 10, 10, 160, 120); break;
-        case 3:; psrc_ui_renderWindowBase(true, "test", false, false, 10, 10, 160, 120); break;
-        case 4:; psrc_ui_renderWindowBase(false, "test", true, true, 10, 10, 160, 120); break;
+        case 0:; psrc_ui_renderWindowBase(true, "test", true, true, 10, 10, 160, 160); break;
+        case 1:; psrc_ui_renderWindowBase(true, "test", false, true, 10, 10, 160, 160); break;
+        case 2:; psrc_ui_renderWindowBase(true, "test", true, false, 10, 10, 160, 160); break;
+        case 3:; psrc_ui_renderWindowBase(true, "test", false, false, 10, 10, 160, 160); break;
+        case 4:; psrc_ui_renderWindowBase(false, "test", true, true, 10, 10, 160, 160); break;
     }
     if (psrc.utime() - psrc_ui_renderHookTime >= 1000000) {
         psrc_ui_renderHookTestI = (psrc_ui_renderHookTestI + 1) % 5;
@@ -75,8 +78,17 @@ void psrc_ui_renderHook() {
     }
 }
 
+void psrc_ui_showUI() {
+    psrc_ui.shown = true;
+}
+
+void psrc_ui_hideUI() {
+    psrc_ui.shown = false;
+}
+
 psrc_ui_struct* psrc_ui_init() {
-    psrc_ui = (psrc_ui_struct){psrc_ui_renderHook, NULL, NULL, NULL, NULL, NULL, psrc_ui_deinit};
+    psrc_ui = (psrc_ui_struct){psrc_ui_renderHook, NULL, NULL, NULL, NULL, NULL,
+        psrc_ui_showUI, psrc_ui_hideUI, psrc_ui_deinit, false};
     /*
     if (FT_Init_FreeType(&psrc_ui_ftlib)) {
         psrc.displayError(PSRC_ERR, "FT_Init_FreeType", "Failed to initialize FreeType 2 library");
