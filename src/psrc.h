@@ -1,6 +1,6 @@
 #ifndef PSRC
 
-#define PSRC 2021112101
+#define PSRC 2021112200
 
 #define PSRC_MACSTR_IND(x) #x
 #define PSRC_MACSTR(x) PSRC_MACSTR_IND(x)
@@ -15,10 +15,6 @@
 #include <SDL2/SDL.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#include "sound.h"
-#include "gfx.h"
-#include "main.h"
 
 #ifdef _WIN32
 #include <windows.h>

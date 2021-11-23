@@ -7,12 +7,15 @@ endif
 PBINFLAGS := -L. -L./src/lib -Llib -g -Ofast
 BINFLAGS := -lpthread -lm -lSDL2 -lSDL2_mixer
 ifndef OS
-BINFLAGS := $(BINFLAGS) -lglfw -ldl -lGL -lassimp
+BINFLAGS := $(BINFLAGS) -lglfw -ldl -lGL -lassimp $(shell pkg-config --libs freetype2)
 else
 BINFLAGS := $(BINFLAGS) -lmingw32 -lSDL2main -lopengl32
 endif
 POBJFLAGS := -Wall -Wextra -I. -I./src/include -Ilib -g -Ofast
 OBJFLAGS := 
+ifndef OS
+POBJFLAGS := $(POBJFLAGS) $(shell pkg-config --cflags freetype2)
+endif
 
 SRC := src
 OBJ := obj

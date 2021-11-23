@@ -1,4 +1,6 @@
 #include "psrc.h"
+#include "sound.h"
+#include "main.h"
 
 #include <SDL2/SDL_mixer.h>
 

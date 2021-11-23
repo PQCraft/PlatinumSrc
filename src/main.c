@@ -1,4 +1,5 @@
 #include "psrc.h"
+#include "main.h"
 
 #include <string.h>
 #include <signal.h>
@@ -73,10 +74,112 @@ void psrc_main_displayError(int ecode, char* func, char* estr) {
     }
 }
 
+char psrc_main_getCfgValBuf[32768];
+
+void psrc_main_getCfgVar(char* fdata, char* var, char* dval, char* out) {
+    int spcoff = 0;
+    if (!out) return;
+    char* oout = out;
+    *out = 0;
+    if (!var || !dval) return;
+    if (!fdata) goto retdef;
+    spcskip:;
+    while (*fdata == ' ' || *fdata == '\n') {++fdata;}
+    if (!*fdata) goto retdef;
+    if (*fdata == '#') {while (*fdata && *fdata != '\n') {++fdata;} goto spcskip;}
+    for (char* tvar = var; *fdata; ++fdata, ++tvar) {
+        bool upc = false;
+        if (*fdata >= 'A' && *fdata <= 'Z') {upc = true;}
+        if (*fdata == ' ' || *fdata == '=') {
+            while (*fdata == ' ') {++fdata;}
+            if (*tvar || *fdata != '=') {while (*fdata && *fdata != '\n') {++fdata;} goto spcskip;}
+            else {++fdata; goto getval;}
+        } else if (upc && (*fdata) + 32 == *tvar) {
+        } else if (upc && *fdata == *tvar) {
+        } else if (!upc && *fdata == (*tvar) + 32) {
+        } else if (*fdata != *tvar) {
+            while (*fdata && *fdata != '\n') {++fdata;}
+            goto spcskip;
+        }
+    }
+    getval:;
+    while (*fdata == ' ') {++fdata;}
+    if (!*fdata) goto retdef;
+    else if (*fdata == '\n') goto spcskip;
+    bool inStr = false;
+    while (*fdata && *fdata != '\n') {
+        if (*fdata == '"') {
+            inStr = !inStr;
+        } else {
+            if (*fdata == '\\') {
+                if (inStr) {
+                    ++fdata;
+                    if (*fdata == '"') *out++ = '"';
+                    else if (*fdata == 'n') *out++ = '\n';
+                    else if (*fdata == 'r') *out++ = '\r';
+                    else if (*fdata == 't') *out++ = '\t';
+                    else if (*fdata == 'e') *out++ = '\e';
+                    else if (*fdata == '\n') *out++ = '\n';
+                    else {
+                        *out++ = '\\';
+                        *out++ = *fdata;
+                    }
+                } else {
+                    ++fdata;
+                    if (*fdata == '"') *out++ = '"';
+                    else if (*fdata == '\n') *out++ = '\n';
+                    else {
+                        *out++ = '\\';
+                        *out++ = *fdata;
+                    }
+                }
+            } else {
+                *out++ = *fdata;
+            }
+            if (!inStr && *fdata == ' ') ++spcoff;
+            else {spcoff = 0;}
+        }
+        ++fdata;
+    }
+    goto retok;
+    retdef:;
+    strcpy(oout, dval);
+    return;
+    retok:;
+    out -= spcoff;
+    *out = 0;
+}
+
+bool psrc_main_cfgValBool(char* val) {
+    if (!val) return -1;
+    char* nval = strdup(val);
+    for (char* nvalp = nval; *nvalp; ++nvalp) {
+        if (*nvalp >= 'A' && *nvalp <= 'Z') *nvalp += 32;
+    }
+    bool ret = (!strcmp(nval, "true") || !strcmp(nval, "yes") || atoi(nval) != 0);
+    free(nval);
+    return ret;
+}
+
+char* psrc_main_getCfgVarStatic(char* fdata, char* var, char* dval) {
+    psrc_main_getCfgVar(fdata, var, dval, psrc_main_getCfgValBuf);
+    return psrc_main_getCfgValBuf;
+}
+
+char* psrc_main_getCfgVarAlloc(char* fdata, char* var, char* dval) {
+    char* ret = malloc(32768);
+    psrc_main_getCfgVar(fdata, var, dval, psrc_main_getCfgValBuf);
+    ret = realloc(ret, strlen(ret) + 1);
+    return ret;
+}
+
 char* psrc_main_getTextFile(char* name) {
     struct stat fnst;
     memset(&fnst, 0, sizeof(struct stat));
-    stat(name, &fnst);
+    if (stat(name, &fnst)) {
+        psrc_main_displayError(PSRC_ERR, "psrc_main_getTextFile: File not found", name);
+        return NULL;
+    }
     if (!S_ISREG(fnst.st_mode)) {
         psrc_main_displayError(PSRC_ERR, "psrc_main_getTextFile: Not a file", name);
         return NULL;
@@ -84,6 +187,33 @@ char* psrc_main_getTextFile(char* name) {
     FILE* file = fopen(name, "r");
     if (!file) {
         psrc_main_displayError(PSRC_ERR, "psrc_main_getTextFile: File not found", name);
+        return NULL;
+    }
+    fseek(file, 0, SEEK_END);
+    long int size = ftell(file);
+    char* data = malloc(size + 1);
+    fseek(file, 0, SEEK_SET);
+    long int i = 0;
+    while (i < size && !feof(file)) {
+        int tmpc = fgetc(file);
+        if (tmpc < 0) tmpc = 0;
+        data[i++] = (char)tmpc;
+    }
+    data[i] = 0;
+    return data;
+}
+
+char* psrc_main_getTextFileSilent(char* name) {
+    struct stat fnst;
+    memset(&fnst, 0, sizeof(struct stat));
+    if (stat(name, &fnst)) {
+        return NULL;
+    }
+    if (!S_ISREG(fnst.st_mode)) {
+        return NULL;
+    }
+    FILE* file = fopen(name, "r");
+    if (!file) {
         return NULL;
     }
     fseek(file, 0, SEEK_END);
@@ -135,8 +265,9 @@ char* psrc_main_pathfilename(char* fn) {
 
 void psrc_main_cleanExit(int code) {
     free(psrc_main_getErrorText_text);
-    if (psrc.sound && psrc.sound->deinit) psrc.sound->deinit();
+    if (psrc.ui && psrc.ui->deinit) psrc.ui->deinit();
     if (psrc.gfx && psrc.gfx->deinit) psrc.gfx->deinit();
+    if (psrc.sound && psrc.sound->deinit) psrc.sound->deinit();
     SDL_Quit();
     exit(code);
 }
@@ -151,31 +282,21 @@ float psrc_main_test_rotmult = 3;
 float psrc_main_test_fpsmult = 0;
 bool psrc_main_test_ps1gfx = false;
 bool psrc_main_test_fpsct = false;
+float psrc_main_test_mousesns = 0.125;
 
 void psrc_main_test_input() {
     float pmult = psrc_main_test_posmult;
     float rmult = psrc_main_test_rotmult;
-    static bool fullscreen = false;
+    static int fullscreen = -1;
+    if (fullscreen == -1) fullscreen = psrc.gfx->fullscr;
     static bool setfullscr = false;
-    static int winox, winoy = 0;
     if (psrc.gfx->chkKey(GLFW_KEY_LEFT_ALT) == GLFW_PRESS || psrc.gfx->chkKey(GLFW_KEY_RIGHT_ALT) == GLFW_PRESS) {
         psrc.gfx->chkKey(GLFW_KEY_ENTER);
         if (psrc.gfx->chkKey(GLFW_KEY_ENTER) == GLFW_PRESS) {
             if (!setfullscr) {
                 setfullscr = true;
                 fullscreen = !fullscreen;
-                if (fullscreen) {
-                    glfwGetWindowPos(psrc.gfx->window, &winox, &winoy);
-                    glfwSetWindowMonitor(psrc.gfx->window, psrc.gfx->monitor, 0, 0, psrc.gfx->win_width, psrc.gfx->win_height, 15);
-                } else {
-                    int twinx, twiny;
-                    uint64_t offset = psrc.utime();
-                    do {
-                        glfwSetWindowMonitor(psrc.gfx->window, NULL, 0, 0, psrc.gfx->win_width, psrc.gfx->win_height, psrc.gfx->fps);
-                        glfwGetWindowPos(psrc.gfx->window, &twinx, &twiny);
-                    } while (psrc.utime() - offset > 3000000 && (twinx != winox || twiny != winoy));
-                    glfwSetWindowPos(psrc.gfx->window, winox, winoy);
-                }
+                psrc.gfx->setFullscreen(fullscreen);
             }
         }
     } else {
@@ -206,8 +327,8 @@ void psrc_main_test_input() {
         if (!mposset) {glfwGetCursorPos(psrc.gfx->window, &mxpos, &mypos); mposset = true;}
         static double nmxpos, nmypos;
         glfwGetCursorPos(psrc.gfx->window, &nmxpos, &nmypos);
-        psrc.gfx->camrot.x += (mypos - nmypos) * 0.125 * rmult / psrc_main_test_rotmult;
-        psrc.gfx->camrot.y -= (mxpos - nmxpos) * 0.125 * rmult / psrc_main_test_rotmult;
+        psrc.gfx->camrot.x += (mypos - nmypos) * psrc_main_test_mousesns * rmult / psrc_main_test_rotmult;
+        psrc.gfx->camrot.y -= (mxpos - nmxpos) * psrc_main_test_mousesns * rmult / psrc_main_test_rotmult;
         if (psrc.gfx->camrot.y < -360) psrc.gfx->camrot.y += 360;
         else if (psrc.gfx->camrot.y > 360) psrc.gfx->camrot.y -= 360;
         if (psrc.gfx->camrot.x > 89.99) psrc.gfx->camrot.x = 89.99;
@@ -284,6 +405,15 @@ void psrc_main_test_renderObjAtFloors(psrc_gfx_obj* obj) {
 }
 
 void psrc_main_test() {
+    {
+        char* cfg = psrc_main_getTextFileSilent("config/base/test.cfg");
+        psrc_main_test_posmult = atof(psrc_main_getCfgVarStatic(cfg, "posmult", "0.25"));
+        psrc_main_test_rotmult = atof(psrc_main_getCfgVarStatic(cfg, "rotmult", "3"));
+        psrc_main_test_mousesns = atof(psrc_main_getCfgVarStatic(cfg, "mousemult", "0.125"));
+        psrc_main_test_ps1gfx = psrc_main_cfgValBool(psrc_main_getCfgVarStatic(cfg, "ps1", "false"));
+        psrc_main_test_fpsct = psrc_main_cfgValBool(psrc_main_getCfgVarStatic(cfg, "fps", "false"));
+        free(cfg);
+    }
     psrc.gfx->campos = (psrc_coord_3d){0, 0, 0};
     psrc.gfx->camrot = (psrc_coord_3d){0, 270, 0};
     float vertices[] = {
@@ -380,27 +510,27 @@ void psrc_main_test() {
     }
     if (glfwRawMouseMotionSupported()) glfwSetInputMode(psrc.gfx->window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
     psrc_gfx_obj* testobj1 = psrc.gfx->newObj((psrc_coord_3d){7, 1.75, 7}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
-        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg", 256, 0);
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg", 256, 0, true);
     psrc_gfx_obj* testobj3 = psrc.gfx->newObj((psrc_coord_3d){1, 0.5, 1}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
-        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16, 0);
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16, 0, true);
     psrc_gfx_obj* testobj4 = psrc.gfx->newObj((psrc_coord_3d){-7, 1.75, 7}, (psrc_coord_3d){-45, 0, 0}, (psrc_coord_3d){1, 1, 1},
-        vertices, sizeof(vertices), indices, sizeof(indices), NULL, 256, 0);
+        vertices, sizeof(vertices), indices, sizeof(indices), NULL, 256, 0, true);
     psrc_gfx_obj* testobj5 = psrc.gfx->newObj((psrc_coord_3d){0, 10, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){8, 8, 8},
-        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16, 0);
-    psrc_gfx_obj* modelp1 = psrc.gfx->loadObj("resources/common/models/barney/barney.obj", 0, "resources/common/models/barney/DM_Base.bmp", 32, 0);
-    psrc_gfx_obj* modelp2 = psrc.gfx->loadObj("resources/common/models/barney/barney.obj", 1, "resources/common/models/barney/DM_Face.bmp", 16, 0);
-    psrc_gfx_obj* modelp3 = psrc.gfx->loadObj("resources/common/models/barney/barney.obj", 2, "resources/common/models/barney/DM_Chrome.bmp", 512, 0);
+        vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/crate.jpg", 16, 0, true);
+    psrc_gfx_obj* modelp1 = psrc.gfx->loadObj("resources/common/models/barney/barney.obj", 0, "resources/common/models/barney/DM_Base.bmp", 32, 0, true);
+    psrc_gfx_obj* modelp2 = psrc.gfx->loadObj("resources/common/models/barney/barney.obj", 1, "resources/common/models/barney/DM_Face.bmp", 16, 0, true);
+    psrc_gfx_obj* modelp3 = psrc.gfx->loadObj("resources/common/models/barney/barney.obj", 2, "resources/common/models/barney/DM_Chrome.bmp", 512, 0, true);
     modelp1->scale = (psrc_coord_3d){0.03, 0.03, 0.03};
     modelp2->scale = (psrc_coord_3d){0.03, 0.03, 0.03};
     modelp3->scale = (psrc_coord_3d){0.03, 0.03, 0.03};
     psrc_gfx_obj* floor1 = psrc.gfx->newObj((psrc_coord_3d){-20, 0, -20}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
-        vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/toxic.jpg", 0, 1);
+        vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/toxic.jpg", 0, 1, true);
     psrc_gfx_obj* floor2 = psrc.gfx->newObj((psrc_coord_3d){20, 0, -20}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
-        vertices5, sizeof(vertices5), indices2, sizeof(indices2), "resources/common/textures/woodenfloor.jpg", 128, 0);
+        vertices5, sizeof(vertices5), indices2, sizeof(indices2), "resources/common/textures/woodenfloor.jpg", 128, 0, true);
     psrc_gfx_obj* floor3 = psrc.gfx->newObj((psrc_coord_3d){-20, 0, 20}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
-        vertices3, sizeof(vertices3), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg", 0, 0);
+        vertices3, sizeof(vertices3), indices2, sizeof(indices2), "resources/common/textures/brickwall.jpg", 0, 0, true);
     psrc_gfx_obj* floor4 = psrc.gfx->newObj((psrc_coord_3d){20, 0, 20}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
-        vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/water.jpg", 0.5, 1);
+        vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/water.jpg", 0.5, 1, true);
     psrc_gfx_light* camlight = psrc.gfx->getNextLight();
     psrc.gfx->setSkybox(psrc.gfx->newSkybox("/home/pqcraft/Documents/PlatinumSrc/resources/common/textures/skybox1/", ".bmp"));
     camlight->type = 1;
@@ -450,8 +580,7 @@ void psrc_main_test() {
     psrc.gfx->setMaxLight(5);
     float opm = psrc_main_test_posmult;
     float orm = psrc_main_test_rotmult;
-    //camlight->type = 0;
-    psrc.sound->playMusic("resources/common/music/walk_in_the_woods.mp3");
+    camlight->type = 0;
     float fpstimeval = -1;
     int fpsct = 0;
     int fpsbuf[5] = {0, 0, 0, 0, 0};
@@ -507,10 +636,10 @@ void psrc_main_test() {
         if (psrc_main_test_fpsct) {
             ++fpsct;
             rendtime += delayoffset;
-            if (psrc.gfx->fps) {
-                uint64_t delaytime = 1000000 / psrc.gfx->fps - delayoffset;
-                if (delaytime < 1000000 / psrc.gfx->fps) psrc.wait(delaytime);
-            }
+        }
+        if (psrc.gfx->cur_fps) {
+            uint64_t delaytime = 1000000 / psrc.gfx->cur_fps - delayoffset;
+            if (delaytime < 1000000 / psrc.gfx->cur_fps) psrc.wait(delaytime);
         }
         psrc_main_test_posmult = opm * psrc_main_test_fpsmult;
         psrc_main_test_rotmult = orm * psrc_main_test_fpsmult;
@@ -553,9 +682,13 @@ char* psrc_startcmd = NULL;
 
 void psrc_main_init() {
     signal(SIGINT, psrc_main_cleanExitSig);
-    psrc = (psrc_main_struct){psrc_main_displayError, psrc_main_wait, psrc_main_utime, psrc_main_randfloat, psrc_main_getTextFile, psrc_main_getFText, NULL, NULL, false};
+    psrc = (psrc_main_struct){psrc_main_displayError, psrc_main_wait, psrc_main_utime, psrc_main_randfloat,
+        psrc_main_getTextFile, psrc_main_getTextFileSilent, psrc_main_getFText,
+        psrc_main_getCfgVar, psrc_main_getCfgVarStatic, psrc_main_getCfgVarAlloc, psrc_main_cfgValBool,
+        NULL, NULL, NULL, false};
     if (!(psrc.sound = psrc_sound_init())) psrc_main_cleanExit(1);
     if (!(psrc.gfx = psrc_gfx_init())) psrc_main_cleanExit(1);
+    if (!(psrc.ui = psrc_ui_init())) psrc_main_cleanExit(1);
 }
 
 int main(int argc, char** argv) {
@@ -616,8 +749,8 @@ int main(int argc, char** argv) {
         psrc_startcmd = argv[0];
     }
     skipscargv:;
+    if (chdir(psrc_main_pathfilename(psrc_startcmd))) {psrc.displayError(PSRC_ERR, "main", "Could not find resources folder"); psrc_main_cleanExit(1);}
     psrc_main_init();
-    if (chdir(psrc_main_pathfilename(psrc_startcmd))) {psrc.displayError(PSRC_ERR, "Fatal", "Could not find resources folder"); psrc_main_cleanExit(1);}
     psrc_main_test();
     psrc_main_cleanExit(0);
     return 0;

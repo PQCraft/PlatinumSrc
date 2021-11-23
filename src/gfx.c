@@ -1,5 +1,7 @@
 #include "psrc.h"
 #include "gfx.h"
+#include "ui.h"
+#include "main.h"
 
 #include <math.h>
 #include <cglm/cglm.h>
@@ -101,11 +103,11 @@ static inline void psrc_gfx_renderObj(psrc_gfx_obj* obj) {
         glBindTexture(GL_TEXTURE_2D, obj->texture);
         glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "TexData"), 0);
         glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "HasTex"), 1);
-        glDrawElements(GL_TRIANGLES, obj->trict, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, obj->isize / sizeof(*obj->indices), GL_UNSIGNED_INT, 0);
         glBindTexture(GL_TEXTURE_2D, 0);
     } else {
         glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "HasTex"), 0);
-        glDrawElements(GL_TRIANGLES, obj->trict, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, obj->isize / sizeof(*obj->indices), GL_UNSIGNED_INT, 0);
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -134,6 +136,13 @@ void psrc_gfx_render() {
         psrc_gfx_updateCam();
     }
     while (psrc_gfx_objstackp) {psrc_gfx_renderObj(&psrc_gfx_objstack[--psrc_gfx_objstackp]);}
+    if (psrc.ui && psrc.ui->renderHook) {
+        glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "is2D"), 1);
+        glDisable(GL_DEPTH_TEST);
+        psrc.ui->renderHook();
+        glEnable(GL_DEPTH_TEST);
+        glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "is2D"), 0);
+    }
     glfwSwapInterval(psrc_gfx.vsync);
     glfwSwapBuffers(psrc_gfx.window);
 }
@@ -150,7 +159,7 @@ bool psrc_gfx_winQuit() {glfwPollEvents(); return glfwWindowShouldClose(psrc_gfx
 
 psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
     float* v, long unsigned int vs, unsigned int* i, long unsigned int is,
-    char* t, float shine, float resis) {
+    char* t, float shine, float resis, bool mm) {
     int width, height, nrChannels;
     unsigned char* data;
     if (t) {
@@ -170,7 +179,6 @@ psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
     obj->vsize = vs;
     obj->indices = i;
     obj->isize = is;
-    obj->trict = is / sizeof(*i);
     obj->material.shine = shine;
     obj->material.lightResistance = resis;
     if (t) {
@@ -179,7 +187,7 @@ psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, psrc_gfx.texFarFilter);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, psrc_gfx.texNearFilter);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        if (mm) glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
         stbi_image_free(data);
     } else {
@@ -208,7 +216,6 @@ psrc_gfx_obj* psrc_gfx_newSbObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d 
     obj->vsize = sizeof(psrc_gfx_skyboxvertices);
     obj->indices = psrc_gfx_skyboxindices;
     obj->isize = sizeof(psrc_gfx_skyboxindices);
-    obj->trict = obj->isize / sizeof(*psrc_gfx_skyboxindices);
     obj->material.shine = 0;
     obj->material.lightResistance = 1;
     if (t) {
@@ -228,7 +235,7 @@ psrc_gfx_obj* psrc_gfx_newSbObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d 
     return obj;
 }
 
-psrc_gfx_obj* psrc_gfx_loadObj(char* m, int mi, char* t, float shine, float resis) {
+psrc_gfx_obj* psrc_gfx_loadObj(char* m, int mi, char* t, float shine, float resis, bool mm) {
     const struct aiScene* scene = aiImportFile(m, aiProcess_Triangulate);
     if (scene->mNumMeshes < 1) {aiReleaseImport(scene); return NULL;}
     struct aiMesh* mesh = scene->mMeshes[mi];
@@ -257,7 +264,7 @@ psrc_gfx_obj* psrc_gfx_loadObj(char* m, int mi, char* t, float shine, float resi
         indices[ict++] = mesh->mFaces[i].mIndices[2];
     }
     psrc_gfx_obj* obj = psrc_gfx_newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
-        vertices, vsize, indices, isize, t, shine, resis);
+        vertices, vsize, indices, isize, t, shine, resis, mm);
     obj->autofreev = true;
     obj->autofreei = true;
     obj->scene = scene;
@@ -405,43 +412,87 @@ bool psrc_gfx_changeShader(GLuint* sp, char* vs, char* fs) {
     return true;
 }
 
+void psrc_gfx_setFullscreen(bool fullscreen) {
+    static int winox, winoy = 0;
+    if (fullscreen) {
+        psrc_gfx_aspect = (float)psrc_gfx.full_width / (float)psrc_gfx.full_height;
+        psrc_gfx.cur_width = psrc_gfx.full_width;
+        psrc_gfx.cur_height = psrc_gfx.full_height;
+        psrc_gfx.cur_fps = psrc_gfx.full_fps;
+        glfwGetWindowPos(psrc_gfx.window, &winox, &winoy);
+        glfwSetWindowMonitor(psrc_gfx.window, psrc_gfx.monitor, 0, 0, psrc_gfx.full_width, psrc_gfx.full_height, psrc_gfx.full_fps);
+        psrc_gfx.fullscr = true;
+    } else {
+        psrc_gfx_aspect = (float)psrc_gfx.win_width / (float)psrc_gfx.win_height;
+        psrc_gfx.cur_width = psrc_gfx.win_width;
+        psrc_gfx.cur_height = psrc_gfx.win_height;
+        psrc_gfx.cur_fps = psrc_gfx.win_fps;
+        int twinx, twiny;
+        uint64_t offset = psrc.utime();
+        do {
+            glfwSetWindowMonitor(psrc_gfx.window, NULL, 0, 0, psrc_gfx.win_width, psrc_gfx.win_height, psrc_gfx.win_fps);
+            glfwGetWindowPos(psrc_gfx.window, &twinx, &twiny);
+        } while (psrc.utime() - offset < 3000000 && (twinx != winox || twiny != winoy));
+        glfwSetWindowPos(psrc_gfx.window, winox, winoy);
+        psrc_gfx.fullscr = false;
+    }
+    mat4 projection;
+    glm_perspective(psrc_gfx.camfov * M_PI / 180, psrc_gfx_aspect, 0.075, 2048, projection);
+    psrc_gfx_setMat4(psrc_gfx.objsprog, "projection", projection);
+}
+
 psrc_gfx_struct* psrc_gfx_init() {
-    psrc_gfx = (psrc_gfx_struct){640, 480, 0, true, NULL, NULL, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, 50,
+    psrc_gfx = (psrc_gfx_struct){640, 480, 0, 640, 480, 0, 0, 0, 0, false, false, NULL, NULL, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, 50,
         0, 0, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, psrc_gfx_deinit,
         psrc_gfx_updateCam, psrc_gfx_newSkybox, psrc_gfx_setSkybox, psrc_gfx_getLight, psrc_gfx_getNextLight,
         psrc_gfx_updateLight, psrc_gfx_setMaxLight, psrc_gfx_newObj, psrc_gfx_loadObj, psrc_gfx_pushObj, psrc_gfx_popObj,
-        psrc_gfx_render, psrc_gfx_changeShader, psrc_gfx_chkKey, psrc_gfx_winQuit};
+        psrc_gfx_render, psrc_gfx_renderObj, psrc_gfx_changeShader, psrc_gfx_chkKey, psrc_gfx_setFullscreen, psrc_gfx_winQuit};
     glfwInit();
+    char* cfg = psrc.getTextFileSilent("config/base/gfx.cfg");
+    sscanf(psrc.getCfgVarStatic(cfg, "resolution", "640x480@60"), "%ux%u@%u", &psrc_gfx.win_width, &psrc_gfx.win_height, &psrc_gfx.win_fps);
+    sscanf(psrc.getCfgVarStatic(cfg, "fullresolution", "640x480@60"), "%ux%u@%u", &psrc_gfx.full_width, &psrc_gfx.full_height, &psrc_gfx.full_fps);
+    if (!psrc_gfx.win_width || psrc_gfx.win_width > 32767) psrc_gfx.win_width = 640;
+    if (!psrc_gfx.win_height || psrc_gfx.win_height > 32767) psrc_gfx.win_height = 480;
+    psrc_gfx.vsync = psrc.cfgValBool(psrc.getCfgVarStatic(cfg, "vsync", "false"));
+    psrc_gfx.fullscr = psrc.cfgValBool(psrc.getCfgVarStatic(cfg, "fullscreen", "false"));
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
-    glfwWindowHint(GLFW_REFRESH_RATE, 15);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     if (!(psrc_gfx.monitor = glfwGetPrimaryMonitor())) {
         psrc.displayError(PSRC_ERR, "glfwGetPrimaryMonitor", "Failed to fetch primary monitor handle");
+        free(cfg);
         return NULL;
     }
     if (!(psrc_gfx.window = glfwCreateWindow(psrc_gfx.win_width, psrc_gfx.win_height, PSRC_STR, NULL, NULL))) {
         psrc.displayError(PSRC_ERR, "glfwCreateWindow", "Failed to create window");
+        free(cfg);
         return NULL;
     }
     glfwMakeContextCurrent(psrc_gfx.window);
     glfwSetInputMode(psrc_gfx.window, GLFW_STICKY_KEYS, GLFW_TRUE);
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         psrc.displayError(PSRC_ERR, "gladLoadGLLoader", "Failed to initialize GLAD");
+        free(cfg);
         return NULL;
     }
-    glViewport(0, 0, psrc_gfx.win_width, psrc_gfx.win_height);
     glfwSetFramebufferSizeCallback(psrc_gfx.window, psrc_gfx_winch);
     for (int i = 0; i < 64; ++i) {
         psrc_gfx_lightstack[i].id = i;
     }
-    if (!psrc_gfx_makeShaderProg("resources/base/shaders/vertex.glsl", "resources/base/shaders/fragment.glsl", &psrc_gfx.objsprog)) return NULL;
+    if (!psrc_gfx_makeShaderProg("resources/base/shaders/vertex.glsl", "resources/base/shaders/fragment.glsl", &psrc_gfx.objsprog)) {
+        free(cfg);
+        return NULL;
+    }
     glUseProgram(psrc_gfx.objsprog);
-    psrc_gfx_aspect = (float)psrc_gfx.win_width / (float)psrc_gfx.win_height;
+    psrc_gfx_setFullscreen(psrc_gfx.fullscr);
+    glViewport(0, 0, psrc_gfx.cur_width, psrc_gfx.cur_height);
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glClearColor(0, 0, 0, 1);
@@ -451,8 +502,11 @@ psrc_gfx_struct* psrc_gfx_init() {
     glfwSwapBuffers(psrc_gfx.window);
     psrc_gfx_updateCam();
     glfwPollEvents();
-    C_STRUCT aiLogStream astream;
-	astream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, NULL);
-	aiAttachLogStream(&astream);
+    if (psrc.cfgValBool(psrc.getCfgVarStatic(cfg, "modelverbose", "false"))) {
+        C_STRUCT aiLogStream astream;
+	    astream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, NULL);
+	    aiAttachLogStream(&astream);
+        free(cfg);
+    }
     return &psrc_gfx;
 }

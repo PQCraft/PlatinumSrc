@@ -28,7 +28,6 @@ typedef struct {
     psrc_coord_3d pos;
     psrc_coord_3d rot;
     psrc_coord_3d scale;
-    long unsigned int trict;
     float* vertices;
     long unsigned int vsize;
     bool autofreev;
@@ -71,8 +70,15 @@ typedef struct {
 typedef struct {
     unsigned int win_width;
     unsigned int win_height;
-    unsigned int fps;
+    unsigned int win_fps;
+    unsigned int full_width;
+    unsigned int full_height;
+    unsigned int full_fps;
+    unsigned int cur_width;
+    unsigned int cur_height;
+    unsigned int cur_fps;
     bool vsync;
+    bool fullscr;
     GLFWmonitor* monitor;
     GLFWwindow* window;
     psrc_coord_3d campos;
@@ -92,13 +98,15 @@ typedef struct {
     void (*setMaxLight)(int);
     psrc_gfx_obj* (*newObj)(psrc_coord_3d, psrc_coord_3d, psrc_coord_3d,
         float*, long unsigned int, unsigned int*, long unsigned int,
-        char*, float, float);
-    psrc_gfx_obj* (*loadObj)(char*, int, char*, float, float);
+        char*, float, float, bool);
+    psrc_gfx_obj* (*loadObj)(char*, int, char*, float, float, bool);
     void (*pushObj)(psrc_gfx_obj*);
     psrc_gfx_obj (*popObj)(void);
     void (*render)(void);
+    void (*renderObj)(psrc_gfx_obj*);
     bool (*changeShader)(GLuint*, char*, char*);
     int (*chkKey)(int);
+    void (*setFullscreen)(bool);
     bool (*winQuit)(void);
 } psrc_gfx_struct;
 

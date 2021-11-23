@@ -8,7 +8,7 @@ struct light_struct {
     vec3 position;
     vec3 ambient;
     vec3 diffuse;
-    vec3 specular;       
+    vec3 specular;
     vec3 direction;
     float range;
     vec3 tcorner;
@@ -22,12 +22,13 @@ struct material_struct {
 
 in vec3 CurColor;
 in vec2 TexCoord;
-in vec3 FragPos;  
-in vec3 Normal;  
+in vec3 FragPos;
+in vec3 Normal;
+flat in int fIs2D;
 
 uniform sampler2D TexData;
 uniform int HasTex;
-uniform vec3 viewPos; 
+uniform vec3 viewPos;
 
 uniform light_struct light[64];
 uniform material_struct material;
@@ -60,13 +61,20 @@ vec3 calcLight(int i) {
 }
 
 void main() {
-    vec3 result = vec3(0.0, 0.0, 0.0);
-    for (int i = 0; i < maxlightindex; ++i) {
-        if (light[i].type != 0) result += calcLight(i);
-    }
-    result = mix(result, CurColor, material.resis);
-    FragColor = vec4(result, 1.0);
-    if (HasTex != 0) {
-        FragColor *= (texture(TexData, TexCoord) + (material.shine / 4096));
+    if (fIs2D == 0) {
+        vec3 result = vec3(0.0, 0.0, 0.0);
+        for (int i = 0; i < maxlightindex; ++i) {
+            if (light[i].type != 0) result += calcLight(i);
+        }
+        result = mix(result, CurColor, material.resis);
+        FragColor = vec4(result, 1.0);
+        if (HasTex != 0) {
+            FragColor *= (texture(TexData, TexCoord) + (material.shine / 4096));
+        }
+    } else {
+        FragColor = vec4(CurColor, 1.0);
+        if (HasTex != 0) {
+            FragColor *= texture(TexData, TexCoord);
+        }
     }
 }
