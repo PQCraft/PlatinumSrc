@@ -37,21 +37,42 @@ void psrc_ui_renderElem(int id, unsigned x, unsigned y, unsigned w, unsigned h) 
     psrc_ui_renderObj2D(*psrc_ui_elemobj[id], x, y, w, h);
 }
 
-void psrc_ui_renderWindowBase(char* title, bool logo, bool close, unsigned x, unsigned y, unsigned w, unsigned h) {
+void psrc_ui_renderWindowBase(bool tbar, char* title, bool logo, bool close, unsigned x, unsigned y, unsigned w, unsigned h) {
+    h += 24;
     (void)title;
-    psrc_ui_renderElem(4, x, y, w, 24);
-    psrc_ui_renderElem(3, x, y, 24, 24);
-    psrc_ui_renderElem(5, x + w - 24, y, 24, 24);
-    psrc_ui_renderElem(0, x, y + 24, w, h - 24);
-    psrc_ui_renderElem(7, x, y + h, w, 1);
-    psrc_ui_renderElem(8, x, y + 24, 1, h - 24);
-    psrc_ui_renderElem(9, x + w - 1, y + 24, 1, h - 24);
-    if (logo) psrc_ui_renderElem(1, x + 4, y + 4, 16, 16);
-    if (close) psrc_ui_renderElem(2, x + w - 20, y + 4, 16, 16);
+    if (tbar) {
+        psrc_ui_renderElem(4, x, y, w, 24);
+        psrc_ui_renderElem(3, x, y, 24, 24);
+        psrc_ui_renderElem(5, x + w - 24, y, 24, 24);
+    }
+    psrc_ui_renderElem(0, x, y + 24 * tbar, w, h - 24);
+    if (!tbar) {
+        psrc_ui_renderElem(6, x, y, w, 1);
+    }
+    psrc_ui_renderElem(7, x, y - 1 + h - 24 * !tbar, w, 1);
+    psrc_ui_renderElem(8, x, y + 24 * tbar, 1, h - 24);
+    psrc_ui_renderElem(9, x + w - 1, y + 24 * tbar, 1, h - 24);
+    if (tbar && logo) psrc_ui_renderElem(1, x + 4, y + 4, 16, 16);
+    if (tbar && close) psrc_ui_renderElem(2, x + w - 20, y + 4, 16, 16);
 }
 
+int psrc_ui_renderHookTestI = 0;
+uint64_t psrc_ui_renderHookTime = 0;
+
 void psrc_ui_renderHook() {
-    psrc_ui_renderWindowBase("test", true, true, 50, 50, 160, 120);
+    static bool setHookTime = false;
+    if (!setHookTime) {psrc_ui_renderHookTime = psrc.utime(); setHookTime = true;}
+    switch (psrc_ui_renderHookTestI) {
+        case 0:; psrc_ui_renderWindowBase(true, "test", true, true, 10, 10, 160, 120); break;
+        case 1:; psrc_ui_renderWindowBase(true, "test", false, true, 10, 10, 160, 120); break;
+        case 2:; psrc_ui_renderWindowBase(true, "test", true, false, 10, 10, 160, 120); break;
+        case 3:; psrc_ui_renderWindowBase(true, "test", false, false, 10, 10, 160, 120); break;
+        case 4:; psrc_ui_renderWindowBase(false, "test", true, true, 10, 10, 160, 120); break;
+    }
+    if (psrc.utime() - psrc_ui_renderHookTime >= 1000000) {
+        psrc_ui_renderHookTestI = (psrc_ui_renderHookTestI + 1) % 5;
+        psrc_ui_renderHookTime = psrc.utime();
+    }
 }
 
 psrc_ui_struct* psrc_ui_init() {
