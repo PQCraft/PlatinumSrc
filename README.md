@@ -9,16 +9,15 @@ Progress (checked = done, <- = being worked on):<br>
 - [ ] Sound engine <-
   - [X] Music
   - [ ] Sound effects **<-**
-- [ ] UI engine
+- [ ] UI engine **<-**
   - [ ] Text rendering
-  - [ ] Box rendering
-  - [ ] Button rendering
+  - [X] Box rendering
+  - [ ] Element rendering
   - [ ] Collision and click detection
-  - [ ] UI decoration
-- [ ] Graphics engine <-
-  - [ ] In-game UI rendering
+- [ ] Graphics engine
+  - [ ] In-game HUD rendering
   - [X] Objects
-  - [ ] Object render stack **<-**
+  - [X] Object render stack
   - [X] 2D
     - [X] Shapes
     - [X] Coloring
