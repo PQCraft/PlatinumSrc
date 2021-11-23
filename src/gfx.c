@@ -124,14 +124,14 @@ void psrc_gfx_render() {
         psrc_coord_3d ocp = psrc_gfx.campos;
         psrc_gfx.campos = (psrc_coord_3d){0, 0, 0};
         psrc_gfx_updateCam();
-        glDisable(GL_DEPTH_TEST);
+        //glDisable(GL_DEPTH_TEST);
         psrc_gfx_renderObj(psrc_gfx_skyboxptr->top);
         psrc_gfx_renderObj(psrc_gfx_skyboxptr->bottom);
         psrc_gfx_renderObj(psrc_gfx_skyboxptr->left);
         psrc_gfx_renderObj(psrc_gfx_skyboxptr->front);
         psrc_gfx_renderObj(psrc_gfx_skyboxptr->right);
         psrc_gfx_renderObj(psrc_gfx_skyboxptr->back);
-        glEnable(GL_DEPTH_TEST);
+        //glEnable(GL_DEPTH_TEST);
         psrc_gfx.campos = ocp;
         psrc_gfx_updateCam();
     }
