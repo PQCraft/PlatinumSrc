@@ -17,24 +17,34 @@ typedef struct {
 } psrc_ui_chardata;
 
 typedef struct {
+    char* id;
     int type;
     psrc_ui_coord pos;
-    char** data;
+    psrc_ui_coord size;
+    void* data;
+    void (*callback)(char*, void*);
 } psrc_ui_elem;
 
 typedef struct {
+    unsigned id;
+    psrc_ui_coord pos;
+    psrc_ui_coord size;
+    bool tbar;
     char* title;
-    bool closable;
+    bool logo;
+    uint8_t btns;
+    int elemct;
     psrc_ui_elem* elems;
 } psrc_ui_dialog;
 
 typedef struct {
     void (*renderHook)(void);
-    int (*newDialog)(char*, bool, ...);
-    void (*modDialog)(int, ...);
-    void (*closeDialog)(int);
-    void (*pushToFront)(int);
-    void (*pushToBack)(int);
+    void (*pollUI)(void);
+    uint16_t (*newDialog)(int, int, int, int, bool, char*, bool, uint8_t, int, ...);
+    void (*modDialog)(uint16_t, ...);
+    void (*closeDialog)(uint16_t);
+    void (*pushToFront)(uint16_t);
+    void (*pushToBack)(uint16_t);
     void (*showUI)(void);
     void (*hideUI)(void);
     void (*deinit)(void);
@@ -42,5 +52,38 @@ typedef struct {
 } psrc_ui_struct;
 
 psrc_ui_struct* psrc_ui_init();
+
+enum {
+    PSRC_UI_WIN_FILL,
+    PSRC_UI_WIN_LOGO,
+    PSRC_UI_WIN_CLOSE,
+    PSRC_UI_WIN_RESIZE,
+    PSRC_UI_WIN_HELP,
+    PSRC_UI_WIN_TBAR_LEFT,
+    PSRC_UI_WIN_TBAR,
+    PSRC_UI_WIN_TBAR_RIGHT,
+    PSRC_UI_WIN_BDR_TOP,
+    PSRC_UI_WIN_BDR_BTM,
+    PSRC_UI_WIN_BDR_LEFT,
+    PSRC_UI_WIN_BDR_RIGHT,
+    PSRC_UI_WIN_BTN,
+    PSRC_UI_WIN_BTN_HOVER,
+    PSRC_UI_WIN_BTN_PRESS,
+    PSRC_UI_WIN_PBAR,
+    PSRC_UI_WIN_SLD_LEFT,
+    PSRC_UI_WIN_SLD,
+    PSRC_UI_WIN_SLD_RIGHT,
+    PSRC_UI_WIN_TBOX,
+};
+
+enum {
+    PSRC_UI_ELEM_BTN,
+    PSRC_UI_ELEM_TBOX,
+    PSRC_UI_ELEM_SKIP = 255,
+};
+
+#define PSRC_UI_BTN_CLOSE 1
+#define PSRC_UI_BTN_RESIZE 2
+#define PSRC_UI_BTN_HELP 4
 
 #endif

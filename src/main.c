@@ -288,11 +288,15 @@ void psrc_main_test_input() {
     float pmult = psrc_main_test_posmult;
     float rmult = psrc_main_test_rotmult;
     static bool setui = false;
-    if (!setui && psrc.gfx->chkKey(GLFW_KEY_ESCAPE)) {
-        if (!psrc.ui->shown) {
-            psrc.ui->showUI();
-        } else {
-            psrc.ui->hideUI();
+    if (psrc.gfx->chkKey(GLFW_KEY_ESCAPE)) {
+        if (!setui) {
+            glfwSetInputMode(psrc.gfx->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            if (!psrc.ui->shown) {
+                psrc.ui->showUI();
+            } else {
+                psrc.ui->hideUI();
+            }
+            setui = true;
         }
     } else {
         setui = false;
@@ -312,89 +316,90 @@ void psrc_main_test_input() {
     } else {
         setfullscr = false;
     }
-    if (psrc.gfx->chkKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || psrc.gfx->chkKey(GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {
-        psrc.gfx->campos.y -= psrc_main_test_fpsmult / M_PI * 0.75;
-        if (psrc.gfx->campos.y < 1) psrc.gfx->campos.y = 1;
-        pmult /= 2;
-    } else {
-        if (psrc.gfx->campos.y < 2) psrc.gfx->campos.y = 2;
+    if (!psrc.ui->shown) {
+        if (psrc.gfx->chkKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || psrc.gfx->chkKey(GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {
+            psrc.gfx->campos.y -= psrc_main_test_fpsmult / M_PI * 0.75;
+            if (psrc.gfx->campos.y < 1) psrc.gfx->campos.y = 1;
+            pmult /= 2;
+        } else {
+            if (psrc.gfx->campos.y < 2) psrc.gfx->campos.y = 2;
+        }
+        if (psrc.gfx->chkKey(GLFW_KEY_Z) == GLFW_PRESS) {
+            psrc.gfx->camfov = 10;
+            pmult /= 2;
+            rmult /= 4;
+        } else {
+            psrc.gfx->camfov = 50;
+        }
+        if (psrc.gfx->chkKey(GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || psrc.gfx->chkKey(GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS) {
+            pmult *= 2;
+        }
+        static bool mrelease = false;
+        static bool mposset = false;
+        static double mxpos, mypos;
+        if ((glfwGetWindowAttrib(psrc.gfx->window, GLFW_HOVERED) || mrelease) && glfwGetMouseButton(psrc.gfx->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+            mrelease = true;
+            if (!mposset) {glfwGetCursorPos(psrc.gfx->window, &mxpos, &mypos); mposset = true;}
+            static double nmxpos, nmypos;
+            glfwGetCursorPos(psrc.gfx->window, &nmxpos, &nmypos);
+            psrc.gfx->camrot.x += (mypos - nmypos) * psrc_main_test_mousesns * rmult / psrc_main_test_rotmult;
+            psrc.gfx->camrot.y -= (mxpos - nmxpos) * psrc_main_test_mousesns * rmult / psrc_main_test_rotmult;
+            if (psrc.gfx->camrot.y < -360) psrc.gfx->camrot.y += 360;
+            else if (psrc.gfx->camrot.y > 360) psrc.gfx->camrot.y -= 360;
+            if (psrc.gfx->camrot.x > 89.99) psrc.gfx->camrot.x = 89.99;
+            if (psrc.gfx->camrot.x < -89.99) psrc.gfx->camrot.x = -89.99;
+            mxpos = nmxpos;
+            mypos = nmypos;
+            glfwSetInputMode(psrc.gfx->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        } else {
+            mrelease = false;
+            mposset = false;
+            glfwSetInputMode(psrc.gfx->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            glfwGetCursorPos(psrc.gfx->window, &mxpos, &mypos);
+        }
+        if (psrc.gfx->chkKey(GLFW_KEY_UP) == GLFW_PRESS) {
+            psrc.gfx->camrot.x += rmult;
+            if (psrc.gfx->camrot.x > 89.99) psrc.gfx->camrot.x = 89.99;
+        }
+        if (psrc.gfx->chkKey(GLFW_KEY_DOWN) == GLFW_PRESS) {
+            psrc.gfx->camrot.x -= rmult;
+            if (psrc.gfx->camrot.x < -89.99) psrc.gfx->camrot.x = -89.99;
+        }
+        if (psrc.gfx->chkKey(GLFW_KEY_LEFT) == GLFW_PRESS) {
+            psrc.gfx->camrot.y -= rmult;
+            if (psrc.gfx->camrot.y < -360) psrc.gfx->camrot.y += 360;
+        }
+        if (psrc.gfx->chkKey(GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            psrc.gfx->camrot.y += rmult;
+            if (psrc.gfx->camrot.y > 360) psrc.gfx->camrot.y -= 360;
+        }
+        if (psrc.gfx->chkKey(GLFW_KEY_SPACE) == GLFW_PRESS) {
+            psrc.gfx->campos.y += psrc_main_test_fpsmult / M_PI * 0.75;
+        }
+        if (psrc.gfx->chkKey(GLFW_KEY_W) == GLFW_PRESS) {
+            float yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
+            psrc.gfx->campos.x += sinf(yrotrad) * pmult;
+            psrc.gfx->campos.z -= cosf(yrotrad) * pmult;
+        }
+        if (psrc.gfx->chkKey(GLFW_KEY_S) == GLFW_PRESS) {
+            float yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
+            psrc.gfx->campos.x -= sinf(yrotrad) * pmult;
+            psrc.gfx->campos.z += cosf(yrotrad) * pmult;
+        }
+        if (psrc.gfx->chkKey(GLFW_KEY_A) == GLFW_PRESS) {
+            float yrotrad;
+            yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
+            psrc.gfx->campos.x -= cosf(yrotrad) * pmult;
+            psrc.gfx->campos.z -= sinf(yrotrad) * pmult;
+        }
+        if (psrc.gfx->chkKey(GLFW_KEY_D) == GLFW_PRESS) {
+            float yrotrad;
+            yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
+            psrc.gfx->campos.x += cosf(yrotrad) * pmult;
+            psrc.gfx->campos.z += sinf(yrotrad) * pmult;
+        }
+        psrc.gfx->updateCam();
     }
-    if (psrc.gfx->chkKey(GLFW_KEY_Z) == GLFW_PRESS) {
-        psrc.gfx->camfov = 10;
-        pmult /= 2;
-        rmult /= 4;
-    } else {
-        psrc.gfx->camfov = 50;
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || psrc.gfx->chkKey(GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS) {
-        pmult *= 2;
-    }
-    static bool mrelease = false;
-    static bool mposset = false;
-    static double mxpos, mypos;
-    if ((glfwGetWindowAttrib(psrc.gfx->window, GLFW_HOVERED) || mrelease) && glfwGetMouseButton(psrc.gfx->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-        mrelease = true;
-        if (!mposset) {glfwGetCursorPos(psrc.gfx->window, &mxpos, &mypos); mposset = true;}
-        static double nmxpos, nmypos;
-        glfwGetCursorPos(psrc.gfx->window, &nmxpos, &nmypos);
-        psrc.gfx->camrot.x += (mypos - nmypos) * psrc_main_test_mousesns * rmult / psrc_main_test_rotmult;
-        psrc.gfx->camrot.y -= (mxpos - nmxpos) * psrc_main_test_mousesns * rmult / psrc_main_test_rotmult;
-        if (psrc.gfx->camrot.y < -360) psrc.gfx->camrot.y += 360;
-        else if (psrc.gfx->camrot.y > 360) psrc.gfx->camrot.y -= 360;
-        if (psrc.gfx->camrot.x > 89.99) psrc.gfx->camrot.x = 89.99;
-        if (psrc.gfx->camrot.x < -89.99) psrc.gfx->camrot.x = -89.99;
-        mxpos = nmxpos;
-        mypos = nmypos;
-        glfwSetInputMode(psrc.gfx->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    } else {
-        mrelease = false;
-        mposset = false;
-        glfwSetInputMode(psrc.gfx->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        glfwGetCursorPos(psrc.gfx->window, &mxpos, &mypos);
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_UP) == GLFW_PRESS) {
-        psrc.gfx->camrot.x += rmult;
-        if (psrc.gfx->camrot.x > 89.99) psrc.gfx->camrot.x = 89.99;
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_DOWN) == GLFW_PRESS) {
-        psrc.gfx->camrot.x -= rmult;
-        if (psrc.gfx->camrot.x < -89.99) psrc.gfx->camrot.x = -89.99;
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_LEFT) == GLFW_PRESS) {
-        psrc.gfx->camrot.y -= rmult;
-        if (psrc.gfx->camrot.y < -360) psrc.gfx->camrot.y += 360;
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        psrc.gfx->camrot.y += rmult;
-        if (psrc.gfx->camrot.y > 360) psrc.gfx->camrot.y -= 360;
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_SPACE) == GLFW_PRESS) {
-        psrc.gfx->campos.y += psrc_main_test_fpsmult / M_PI * 0.75;
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_W) == GLFW_PRESS) {
-        float yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
-        psrc.gfx->campos.x += sinf(yrotrad) * pmult;
-        psrc.gfx->campos.z -= cosf(yrotrad) * pmult;
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_S) == GLFW_PRESS) {
-        float yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
-        psrc.gfx->campos.x -= sinf(yrotrad) * pmult;
-        psrc.gfx->campos.z += cosf(yrotrad) * pmult;
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_A) == GLFW_PRESS) {
-        float yrotrad;
-        yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
-        psrc.gfx->campos.x -= cosf(yrotrad) * pmult;
-        psrc.gfx->campos.z -= sinf(yrotrad) * pmult;
-    }
-    if (psrc.gfx->chkKey(GLFW_KEY_D) == GLFW_PRESS) {
-        float yrotrad;
-        yrotrad = (psrc.gfx->camrot.y / 180 * M_PI);
-        psrc.gfx->campos.x += cosf(yrotrad) * pmult;
-        psrc.gfx->campos.z += sinf(yrotrad) * pmult;
-    }
-    
-    psrc.gfx->updateCam();
 }
 
 void psrc_main_test_renderObjAtFloors(psrc_gfx_obj* obj) {
@@ -598,6 +603,8 @@ void psrc_main_test() {
     int fpsbufm = 0;
     uint64_t rendtime = 0;
     while (!psrc.gfx->winQuit()) {
+        glfwPollEvents();
+        if (psrc.ui->shown) psrc.ui->pollUI();
         uint64_t starttime = psrc.utime();
         camlight->pos = psrc.gfx->campos;
         psrc.gfx->updateLight(camlight->id);
@@ -629,7 +636,7 @@ void psrc_main_test() {
         modelp1->rot.y = -timeval * 22.5;
         modelp2->rot.y = -timeval * 22.5;
         modelp3->rot.y = -timeval * 22.5;
-        testobj5->pos.y = 10 + sin(timeval) * 1.5;
+        testobj5->pos.y = 10 + sin(timeval * 1.5) * 1.5;
         testobj5->rot.y = timeval * 45;
         psrc.gfx->pushObj(floor1);
         psrc.gfx->pushObj(floor2);

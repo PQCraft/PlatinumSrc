@@ -155,7 +155,7 @@ psrc_gfx_obj psrc_gfx_popObj() {
     return psrc_gfx_objstack[--psrc_gfx_objstackp];
 }
 
-bool psrc_gfx_winQuit() {glfwPollEvents(); return glfwWindowShouldClose(psrc_gfx.window) || psrc.quitRequested;}
+bool psrc_gfx_winQuit() {return glfwWindowShouldClose(psrc_gfx.window) || psrc.quitRequested;}
 
 psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
     float* v, long unsigned int vs, unsigned int* i, long unsigned int is,
