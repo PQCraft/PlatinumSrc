@@ -21,7 +21,9 @@ typedef struct {
     int type;
     psrc_ui_coord pos;
     psrc_ui_coord size;
+    int border;
     void* data;
+    void* outdata;
     void (*callback)(char*, void*);
 } psrc_ui_elem;
 
@@ -34,17 +36,19 @@ typedef struct {
     bool logo;
     uint8_t btns;
     int elemct;
+    void (*callback)(uint16_t, void*);
     psrc_ui_elem* elems;
 } psrc_ui_dialog;
 
 typedef struct {
     void (*renderHook)(void);
     void (*pollUI)(void);
-    uint16_t (*newDialog)(int, int, int, int, bool, char*, bool, uint8_t, int, ...);
+    uint16_t (*newDialog)(int, int, int, int, bool, char*, bool, uint8_t, void*, int, ...);
     void (*modDialog)(uint16_t, ...);
     void (*closeDialog)(uint16_t);
     void (*pushToFront)(uint16_t);
     void (*pushToBack)(uint16_t);
+    void (*loadUI)(char*, char*);
     void (*showUI)(void);
     void (*hideUI)(void);
     void (*deinit)(void);
@@ -66,6 +70,7 @@ enum {
     PSRC_UI_WIN_BDR_BTM,
     PSRC_UI_WIN_BDR_LEFT,
     PSRC_UI_WIN_BDR_RIGHT,
+    PSRC_UI_WIN_BDR_SOLID,
     PSRC_UI_WIN_BTN,
     PSRC_UI_WIN_BTN_HOVER,
     PSRC_UI_WIN_BTN_PRESS,
@@ -74,12 +79,31 @@ enum {
     PSRC_UI_WIN_SLD,
     PSRC_UI_WIN_SLD_RIGHT,
     PSRC_UI_WIN_TBOX,
+    PSRC_UI_WIN_CBOX_TRUE,
+    PSRC_UI_WIN_CBOX_FALSE,
+    PSRC_UI_WIN_RBTN_TRUE,
+    PSRC_UI_WIN_RBTN_FALSE,
+    PSRC_UI_WIN_DRPDN,
+    PSRC_UI_WIN_LIST,
 };
 
 enum {
     PSRC_UI_ELEM_BTN,
     PSRC_UI_ELEM_TBOX,
+    PSRC_UI_ELEM_PBAR,
+    PSRC_UI_ELEM_SLIDER,
     PSRC_UI_ELEM_SKIP = 255,
+};
+
+enum {
+    PSRC_UI_MOD_ELEM,
+    PSRC_UI_MOD_BTNS,
+    PSRC_UI_MOD_ADD,
+    PSRC_UI_MOD_REMOVE,
+    PSRC_UI_MOD_POS,
+    PSRC_UI_MOD_SIZE,
+    PSRC_UI_MOD_CALLBACK,
+    PSRC_UI_MOD_DATA,
 };
 
 #define PSRC_UI_BTN_CLOSE 1

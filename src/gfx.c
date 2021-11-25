@@ -442,7 +442,7 @@ void psrc_gfx_setFullscreen(bool fullscreen) {
 }
 
 psrc_gfx_struct* psrc_gfx_init() {
-    psrc_gfx = (psrc_gfx_struct){640, 480, 0, 640, 480, 0, 0, 0, 0, false, false, NULL, NULL, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, 50,
+    psrc_gfx = (psrc_gfx_struct){640, 480, 0, 640, 480, 0, 0, 0, 0, true, false, NULL, NULL, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, 50,
         0, 0, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, psrc_gfx_deinit,
         psrc_gfx_updateCam, psrc_gfx_newSkybox, psrc_gfx_setSkybox, psrc_gfx_getLight, psrc_gfx_getNextLight,
         psrc_gfx_updateLight, psrc_gfx_setMaxLight, psrc_gfx_newObj, psrc_gfx_loadObj, psrc_gfx_pushObj, psrc_gfx_popObj,
@@ -450,10 +450,11 @@ psrc_gfx_struct* psrc_gfx_init() {
     glfwInit();
     char* cfg = psrc.getTextFileSilent("config/base/gfx.cfg");
     sscanf(psrc.getCfgVarStatic(cfg, "resolution", "640x480@60"), "%ux%u@%u", &psrc_gfx.win_width, &psrc_gfx.win_height, &psrc_gfx.win_fps);
-    sscanf(psrc.getCfgVarStatic(cfg, "fullresolution", "640x480@60"), "%ux%u@%u", &psrc_gfx.full_width, &psrc_gfx.full_height, &psrc_gfx.full_fps);
+    sscanf(psrc.getCfgVarStatic(cfg, "fullresolution", psrc.getFText("%ux%u@%u", psrc_gfx.win_width, psrc_gfx.win_height, psrc_gfx.win_fps)),
+        "%ux%u@%u", &psrc_gfx.full_width, &psrc_gfx.full_height, &psrc_gfx.full_fps);
     if (!psrc_gfx.win_width || psrc_gfx.win_width > 32767) psrc_gfx.win_width = 640;
     if (!psrc_gfx.win_height || psrc_gfx.win_height > 32767) psrc_gfx.win_height = 480;
-    psrc_gfx.vsync = psrc.cfgValBool(psrc.getCfgVarStatic(cfg, "vsync", "false"));
+    psrc_gfx.vsync = psrc.cfgValBool(psrc.getCfgVarStatic(cfg, "vsync", "true"));
     psrc_gfx.fullscr = psrc.cfgValBool(psrc.getCfgVarStatic(cfg, "fullscreen", "false"));
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);

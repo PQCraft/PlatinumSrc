@@ -603,12 +603,13 @@ void psrc_main_test() {
     int fpsbufm = 0;
     uint64_t rendtime = 0;
     while (!psrc.gfx->winQuit()) {
-        glfwPollEvents();
-        if (psrc.ui->shown) psrc.ui->pollUI();
         uint64_t starttime = psrc.utime();
+        float timeval = glfwGetTime();
+        glfwPollEvents();
+        psrc_main_test_input();
+        if (psrc.ui->shown) psrc.ui->pollUI();
         camlight->pos = psrc.gfx->campos;
         psrc.gfx->updateLight(camlight->id);
-        float timeval = glfwGetTime();
         if (psrc_main_test_fpsct) {
             if (fpstimeval < 0) fpstimeval = timeval;
             if (timeval - fpstimeval >= 1) {
@@ -660,8 +661,6 @@ void psrc_main_test() {
             uint64_t delaytime = 1000000 / psrc.gfx->cur_fps - delayoffset;
             if (delaytime < 1000000 / psrc.gfx->cur_fps) psrc.wait(delaytime);
         }
-        psrc_main_test_posmult = opm * psrc_main_test_fpsmult;
-        psrc_main_test_rotmult = orm * psrc_main_test_fpsmult;
         float initv = vertices4[7];
         float waterspeed = 0.0025 * psrc_main_test_fpsmult;
         vertices4[7] += waterspeed;
@@ -682,8 +681,9 @@ void psrc_main_test() {
             vertices4[40] -= initv;
             vertices4[41] -= initv;
         }
-        psrc_main_test_input();
         psrc_main_test_fpsmult = (float)(psrc.utime() - starttime) / (1000000.0f / 60.0f);
+        psrc_main_test_posmult = opm * psrc_main_test_fpsmult;
+        psrc_main_test_rotmult = orm * psrc_main_test_fpsmult;
     }
 }
 

@@ -7,14 +7,16 @@ endif
 PBINFLAGS := -L. -L./src/lib -Llib -g -Ofast
 BINFLAGS := -lpthread -lm -lSDL2 -lSDL2_mixer
 ifndef OS
-BINFLAGS := $(BINFLAGS) -lglfw -ldl -lGL -lassimp $(shell pkg-config --libs freetype2)
+BINFLAGS := $(BINFLAGS) -lglfw -ldl -lGL -lassimp -lfreetype
 else
 BINFLAGS := $(BINFLAGS) -lmingw32 -lSDL2main -lopengl32
 endif
 POBJFLAGS := -Wall -Wextra -I. -I./src/include -Ilib -g -Ofast
 OBJFLAGS := 
 ifndef OS
-POBJFLAGS := $(POBJFLAGS) $(shell pkg-config --cflags freetype2)
+POBJFLAGS := $(POBJFLAGS) -I/usr/include/freetype2
+else
+POBJFLAGS := $(POBJFLAGS) -I$(SYSTEMDRIVE)\Program Files\mingw-w64\mingw64\x86_64-w64-mingw32\include\freetype2
 endif
 
 SRC := src
@@ -24,7 +26,7 @@ SOURCES := $(wildcard $(SRC)/*.c)
 DEPENDS := $(wildcard $(SRC)/*.h)
 OBJECTS := $(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SOURCES))
 
-ifdef OS
+ifdef CC
 CC = gcc
 endif
 
@@ -63,3 +65,4 @@ else
 	@if exist $(BIN) del /Q $(BIN)
 	@if exist $(OBJ) rmdir /S /Q $(OBJ)
 endif
+
