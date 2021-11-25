@@ -37,7 +37,7 @@ void psrc_ui_renderObj2D(psrc_gfx_obj obj, int x, int y, int w, int h) {
 void psrc_ui_loadElem(int elem, char* prefix, char* img, char* suffix) {
     psrc_ui_elemobj[elem] = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0},
         psrc_ui_testvertices, sizeof(psrc_ui_testvertices), psrc_ui_testindices, sizeof(psrc_ui_testindices),
-        psrc.getFText("%s%s%s", prefix, img, suffix), 0, 1, false);
+        psrc.getFText("%s%s%s", prefix, img, suffix), 0, 0.5, false);
 }
 
 void psrc_ui_loadUI(char* prefix, char* suffix) {
@@ -77,19 +77,19 @@ void psrc_ui_renderElem(int id, int x, int y, int w, int h) {
 
 void psrc_ui_renderBorder(int x, int y, int w, int h, int b) {
     switch (b) {
-        case 1:;
+        case PSRC_UI_BDR_CONVEX:;
             psrc_ui_renderElem(PSRC_UI_WIN_BDR_TOP, x, y, w, 1);
             psrc_ui_renderElem(PSRC_UI_WIN_BDR_BTM, x, y + h - 1, w, 1);
             psrc_ui_renderElem(PSRC_UI_WIN_BDR_LEFT, x, y, 1, h);
             psrc_ui_renderElem(PSRC_UI_WIN_BDR_RIGHT, x + w - 1, y, 1, h);
             break;
-        case 2:;
+        case PSRC_UI_BDR_CONCAVE:;
             psrc_ui_renderElem(PSRC_UI_WIN_BDR_BTM, x, y, w, 1);
             psrc_ui_renderElem(PSRC_UI_WIN_BDR_TOP, x, y + h - 1, w, 1);
             psrc_ui_renderElem(PSRC_UI_WIN_BDR_RIGHT, x, y, 1, h);
             psrc_ui_renderElem(PSRC_UI_WIN_BDR_LEFT, x + w - 1, y, 1, h);
             break;
-        case 3:;
+        case PSRC_UI_BDR_SOLID:;
             psrc_ui_renderElem(PSRC_UI_WIN_BDR_SOLID, x, y, w, 1);
             psrc_ui_renderElem(PSRC_UI_WIN_BDR_SOLID, x, y + h - 1, w, 1);
             psrc_ui_renderElem(PSRC_UI_WIN_BDR_SOLID, x, y, 1, h);
@@ -103,7 +103,7 @@ void psrc_ui_renderBordered(int e, int x, int y, int w, int h, int b) {
     psrc_ui_renderBorder(x, y, w, h, b);
 }
 
-void psrc_ui_renderDialogBase(int x, int y, int w, int h, bool tbar, char* title, bool logo, uint8_t btns) {
+void psrc_ui_renderDialogBase(int x, int y, int w, int h, bool tbar, char* title, bool logo, uint8_t btns, uint8_t cbtns) {
     (void)title;
     if (tbar) {
         psrc_ui_renderElem(PSRC_UI_WIN_TBAR, x, y, w, 24);
@@ -120,14 +120,17 @@ void psrc_ui_renderDialogBase(int x, int y, int w, int h, bool tbar, char* title
     psrc_ui_renderElem(PSRC_UI_WIN_BDR_RIGHT, x + w - 1, y, 1, h);
     if (tbar) {
         if (logo) psrc_ui_renderElem(PSRC_UI_WIN_LOGO, x + 4, y - 20, 16, 16);
-        if (btns & PSRC_UI_BTN_CLOSE) {x -= 20; psrc_ui_renderBordered(PSRC_UI_WIN_CLOSE, x + w, y - 20, 16, 16, 1);}
-        if (btns & PSRC_UI_BTN_RESIZE) {x -= 20; psrc_ui_renderBordered(PSRC_UI_WIN_RESIZE, x + w, y - 20, 16, 16, 1);}
-        if (btns & PSRC_UI_BTN_HELP) {x -= 20; psrc_ui_renderBordered(PSRC_UI_WIN_HELP, x + w, y - 20, 16, 16, 1);}
+        if (btns & PSRC_UI_BTN_CLOSE) {x -= 20; psrc_ui_renderBordered(PSRC_UI_WIN_CLOSE, x + w, y - 20, 16, 16,
+            (cbtns & PSRC_UI_BTN_CLOSE) ? PSRC_UI_BDR_CONCAVE : PSRC_UI_BDR_CONVEX);}
+        if (btns & PSRC_UI_BTN_RESIZE) {x -= 20; psrc_ui_renderBordered(PSRC_UI_WIN_RESIZE, x + w, y - 20, 16, 16,
+            (cbtns & PSRC_UI_BTN_RESIZE) ? PSRC_UI_BDR_CONCAVE : PSRC_UI_BDR_CONVEX);}
+        if (btns & PSRC_UI_BTN_HELP) {x -= 20; psrc_ui_renderBordered(PSRC_UI_WIN_HELP, x + w, y - 20, 16, 16,
+            (cbtns & PSRC_UI_BTN_HELP) ? PSRC_UI_BDR_CONCAVE : PSRC_UI_BDR_CONVEX);}
     }
 }
 
 void psrc_ui_renderDialog(psrc_ui_dialog* box) {
-    psrc_ui_renderDialogBase(box->pos.x, box->pos.y, box->size.x, box->size.y, box->tbar, box->title, box->logo, box->btns);
+    psrc_ui_renderDialogBase(box->pos.x, box->pos.y, box->size.x, box->size.y, box->tbar, box->title, box->logo, box->btns, box->cbtns);
     int x = box->pos.x, y = box->pos.y + 24 * box->tbar;
     for (int i = 0; i < box->elemct; ++i) {
         psrc_ui_elem* elem = &box->elems[i];
@@ -155,12 +158,28 @@ void psrc_ui_renderDialog(psrc_ui_dialog* box) {
                 psrc_ui_renderElem(PSRC_UI_WIN_SLD_RIGHT, ex + exsize - 16, ey + eysize / 2 - 8, 16, 16);
                 psrc_ui_renderBordered(PSRC_UI_WIN_BTN, ex + (exsize - 16) * (float)(int)(intptr_t)elem->data / 100.0f, ey, 16, eysize, elem->border);
                 break;
+            case PSRC_UI_ELEM_CBOX:
+                psrc_ui_renderBordered(((int)(intptr_t)elem->data) ? PSRC_UI_WIN_CBOX_TRUE : PSRC_UI_WIN_CBOX_FALSE,
+                    ex + exsize / 2 - 8, ey + eysize / 2 - 8, 16, 16, elem->border);
+                break;
+            case PSRC_UI_ELEM_RBTN:
+                psrc_ui_renderBordered(((int)(intptr_t)elem->data) ? PSRC_UI_WIN_RBTN_TRUE : PSRC_UI_WIN_RBTN_FALSE,
+                    ex + exsize / 2 - 8, ey + eysize / 2 - 8, 16, 16, elem->border);
+                break;
+            case PSRC_UI_ELEM_LIST:
+                psrc_ui_renderBordered(PSRC_UI_WIN_LIST, ex, ey, exsize, eysize, elem->border);
+                break;
         }
     }
 }
 
-int psrc_ui_renderHookTestI = 0;
-uint64_t psrc_ui_renderHookTime = 0;
+void psrc_ui_modDialog(uint16_t id, ...) {
+    va_list args;
+    va_start(args, id);
+    //int act = va_arg(args, int);
+    //int obj = va_arg(args, int);
+    va_end(args);
+}
 
 psrc_ui_dialog* psrc_ui_dialogstack[256];
 int psrc_ui_dialogstackp = 0;
@@ -181,6 +200,7 @@ void psrc_ui_pushToFront(uint16_t id) {
 bool psrc_ui_curPressed = false;
 
 void psrc_ui_clickDialog(uint16_t id, int mx, int my) {
+    (void)id; (void)mx; (void)my;
     //printf("click on box %u at (%d, %d)\n", id, mx, my);
 }
 
@@ -196,7 +216,6 @@ void psrc_ui_pollUI() {
     }
     double xdiff = xpos - mxpos;
     double ydiff = ypos - mypos;
-    static bool act = false;
     static int clickid = -1;
     static bool clicktb = false;
     static bool clickhold = false;
@@ -205,7 +224,7 @@ void psrc_ui_pollUI() {
         for (int i = psrc_ui_dialogstackp - 1; i > -1; --i) {
             //printf("clickid: 0: [%d]\n", clickid);
             psrc_ui_dialog* box = psrc_ui_dialogstack[i];
-            if ((clickid == -1 || clickid == (int)box->id) && !act) {
+            if ((clickid == -1 || clickid == (int)box->id)) {
                 if (mxpos >= box->pos.x && mxpos < box->pos.x + box->size.x && mypos >= box->pos.y && mypos < box->pos.y + 24 * box->tbar + box->size.y) {
                     if (glfwGetMouseButton(psrc.gfx->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && (clickid == -1 || clicktb || clickhold)) {
                         if (clickid == -1) clicktb = true;
@@ -222,7 +241,6 @@ void psrc_ui_pollUI() {
                             clickhold = true;
                             psrc_ui_clickDialog(box->id, mxpos - box->pos.x, mypos - box->pos.y - 24 * box->tbar);
                         }
-                        act = true;
                     }
                 } else {
                     if (i == 0) {
@@ -231,8 +249,6 @@ void psrc_ui_pollUI() {
                     clickhold = false;
                     clicktb = false;
                 }
-            } else {
-                act = false;
             }
             if (box->pos.x > (int)psrc.gfx->cur_width - 48) box->pos.x = psrc.gfx->cur_width - 48;
             if (box->pos.y > (int)psrc.gfx->cur_height - 24) box->pos.y = psrc.gfx->cur_height - 24;
@@ -265,6 +281,7 @@ uint16_t psrc_ui_newDialog(int x, int y, int w, int h, bool tbar, char* title, b
     if (x < 0) x = psrc.gfx->cur_width / 2 - w / 2;
     if (y < 0) y = psrc.gfx->cur_height / 2 - h / 2;
     psrc_ui_dialog* box = malloc(sizeof(psrc_ui_dialog));
+    memset(box, 0, sizeof(psrc_ui_dialog));
     box->pos = (psrc_ui_coord){x, y};
     box->size = (psrc_ui_coord){w, h};
     box->tbar = tbar;
@@ -274,30 +291,47 @@ uint16_t psrc_ui_newDialog(int x, int y, int w, int h, bool tbar, char* title, b
     box->callback = cb;
     va_list elems;
     va_start(elems, elemct);
-    box->elemct = elemct;
-    box->elems = malloc(elemct * sizeof(psrc_ui_elem));
-    for (int i = 0; i < elemct; ++i) {
-        box->elems[i].type = va_arg(elems, int);
-        box->elems[i].id = strdup(va_arg(elems, char*));
-        box->elems[i].callback = va_arg(elems, void*);
-        box->elems[i].pos.x = va_arg(elems, int);
-        box->elems[i].pos.y = va_arg(elems, int);
-        box->elems[i].size.x = va_arg(elems, int);
-        box->elems[i].size.y = va_arg(elems, int);
-        box->elems[i].border = va_arg(elems, int);
-        switch (box->elems[i].type) {
-            case PSRC_UI_ELEM_BTN:
-                box->elems[i].data = strdup(va_arg(elems, char*));
-                break;
-            case PSRC_UI_ELEM_TBOX:
-                box->elems[i].data = strdup(va_arg(elems, char*));
-                break;
-            case PSRC_UI_ELEM_PBAR:
-                box->elems[i].data = (void*)(intptr_t)va_arg(elems, int);
-                break;
-            case PSRC_UI_ELEM_SLIDER:
-                box->elems[i].data = (void*)(intptr_t)va_arg(elems, int);
-                break;
+    if (elemct > 0) {
+        box->elemct = elemct;
+        box->elems = malloc(elemct * sizeof(psrc_ui_elem));
+        memset(box->elems, 0, elemct * sizeof(psrc_ui_elem));
+        for (int i = 0; i < elemct; ++i) {
+            box->elems[i].type = va_arg(elems, int);
+            box->elems[i].id = strdup(va_arg(elems, char*));
+            box->elems[i].callback = va_arg(elems, void*);
+            box->elems[i].pos.x = va_arg(elems, int);
+            box->elems[i].pos.y = va_arg(elems, int);
+            box->elems[i].size.x = va_arg(elems, int);
+            box->elems[i].size.y = va_arg(elems, int);
+            box->elems[i].border = va_arg(elems, int);
+            switch (box->elems[i].type) {
+                case PSRC_UI_ELEM_BTN:
+                    box->elems[i].data = strdup(va_arg(elems, char*));
+                    break;
+                case PSRC_UI_ELEM_TBOX:
+                    box->elems[i].data = strdup(va_arg(elems, char*));
+                    break;
+                case PSRC_UI_ELEM_PBAR:
+                    box->elems[i].data = (void*)(intptr_t)va_arg(elems, int);
+                    break;
+                case PSRC_UI_ELEM_SLIDER:
+                    box->elems[i].data = (void*)(intptr_t)va_arg(elems, int);
+                    break;
+                case PSRC_UI_ELEM_CBOX:
+                    box->elems[i].data = (void*)(intptr_t)va_arg(elems, int);
+                    break;
+                case PSRC_UI_ELEM_RBTN:
+                    box->elems[i].data = (void*)(intptr_t)va_arg(elems, int);
+                    break;
+                case PSRC_UI_ELEM_LIST:
+                    int lelem = va_arg(elems, int);
+                    char** src = va_arg(elems, char**);
+                    char** dest = (box->elems[i].data = malloc(lelem * sizeof(char**)));
+                    for (int i = 0; i < lelem; ++i) {
+                        dest[i] = strdup(src[i]);
+                    }
+                    break;
+            }
         }
     }
     va_end(elems);
@@ -336,15 +370,23 @@ psrc_ui_struct* psrc_ui_init() {
     psrc_ui_loadUI("resources/base/images/ui/", ".bmp");
     psrc.gfx->texNearFilter = tmp[0];
     psrc.gfx->texFarFilter = tmp[1];
-    psrc_ui_newDialog(-1, -1, 400, 300, true, "test", true, PSRC_UI_BTN_CLOSE | PSRC_UI_BTN_RESIZE | PSRC_UI_BTN_HELP, NULL, 3,
-        PSRC_UI_ELEM_BTN, "button 1", NULL, 10, 10, 96, 24, 1, "Test",
-        PSRC_UI_ELEM_PBAR, "progressbar 1", NULL, 10, 44, -10, 24, 3, 50,
-        PSRC_UI_ELEM_SLIDER, "slider 1", NULL, 10, 78, -10, 24, 1, 10
+    psrc_ui_newDialog(-1, -1, 400, 300, true, "test", true, PSRC_UI_BTN_CLOSE | PSRC_UI_BTN_RESIZE | PSRC_UI_BTN_HELP, NULL, 9,
+        PSRC_UI_ELEM_BTN, "button", NULL, 10, 10, 128, 24, PSRC_UI_BDR_CONVEX, "Test",
+        PSRC_UI_ELEM_TBOX, "textbox", NULL, 10, 44, -10, 24, PSRC_UI_BDR_CONCAVE, "Test text",
+        PSRC_UI_ELEM_PBAR, "progressbar", NULL, 10, 78, -10, 24, PSRC_UI_BDR_SOLID, 25,
+        PSRC_UI_ELEM_SLIDER, "slider", NULL, 10, 112, -10, 24, PSRC_UI_BDR_CONVEX, 75,
+        PSRC_UI_ELEM_CBOX, "checkbox 1", NULL, 10, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 0,
+        PSRC_UI_ELEM_CBOX, "checkbox 2", NULL, 44, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 1,
+        PSRC_UI_ELEM_RBTN, "radio 1", NULL, 78, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 0,
+        PSRC_UI_ELEM_RBTN, "radio 2", NULL, 112, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 1,
+        PSRC_UI_ELEM_LIST, "list", NULL, 10, 180, -10, -10, PSRC_UI_BDR_SOLID, 2, (char*[]){"test", "text"}
     );
+    /*
     psrc_ui_newDialog(-1, -1, 160, 120, true, "test2", true, PSRC_UI_BTN_HELP, NULL, 3,
         PSRC_UI_ELEM_BTN, "b0", NULL, 10, 10, 56, 24, 1, "Test1",
         PSRC_UI_ELEM_BTN, "b1", NULL, -10, 44, 56, 24, 1, "Test2",
         PSRC_UI_ELEM_TBOX, "b2", NULL, 10, 78, 56, 24, 2, "Test3"
     );
+    */
     return &psrc_ui;
 }

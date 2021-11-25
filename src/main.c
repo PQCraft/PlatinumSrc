@@ -605,9 +605,6 @@ void psrc_main_test() {
     while (!psrc.gfx->winQuit()) {
         uint64_t starttime = psrc.utime();
         float timeval = glfwGetTime();
-        glfwPollEvents();
-        psrc_main_test_input();
-        if (psrc.ui->shown) psrc.ui->pollUI();
         camlight->pos = psrc.gfx->campos;
         psrc.gfx->updateLight(camlight->id);
         if (psrc_main_test_fpsct) {
@@ -651,6 +648,9 @@ void psrc_main_test() {
         psrc_main_test_renderObjAtFloors(modelp2);
         psrc_main_test_renderObjAtFloors(modelp3);
         if (!glfwGetWindowAttrib(psrc.gfx->window, GLFW_FOCUSED)) psrc.wait(1000000 / 15);
+        glfwPollEvents();
+        psrc_main_test_input();
+        if (psrc.ui->shown) psrc.ui->pollUI();
         psrc.gfx->render();
         uint64_t delayoffset = psrc.utime() - starttime;
         if (psrc_main_test_fpsct) {

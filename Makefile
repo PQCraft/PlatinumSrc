@@ -27,7 +27,7 @@ DEPENDS := $(wildcard $(SRC)/*.h)
 OBJECTS := $(patsubst $(SRC)/%.c, $(OBJ)/%.o, $(SOURCES))
 
 ifdef CC
-CC = gcc
+CC := gcc
 endif
 
 .PHONY: all build run clean $(OBJ)

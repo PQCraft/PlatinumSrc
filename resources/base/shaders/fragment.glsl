@@ -24,7 +24,6 @@ in vec3 CurColor;
 in vec2 TexCoord;
 in vec3 FragPos;
 in vec3 Normal;
-flat in int fIs2D;
 
 uniform sampler2D TexData;
 uniform int HasTex;
@@ -33,6 +32,8 @@ uniform vec3 viewPos;
 uniform light_struct light[64];
 uniform material_struct material;
 uniform int maxlightindex;
+
+uniform int fIs2D;
 
 vec3 v3zero = vec3(0, 0, 0);
 vec3 v3one = vec3(1, 1, 1);

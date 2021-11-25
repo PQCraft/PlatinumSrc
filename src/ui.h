@@ -35,6 +35,7 @@ typedef struct {
     char* title;
     bool logo;
     uint8_t btns;
+    uint8_t cbtns;
     int elemct;
     void (*callback)(uint16_t, void*);
     psrc_ui_elem* elems;
@@ -92,13 +93,24 @@ enum {
     PSRC_UI_ELEM_TBOX,
     PSRC_UI_ELEM_PBAR,
     PSRC_UI_ELEM_SLIDER,
+    PSRC_UI_ELEM_CBOX,
+    PSRC_UI_ELEM_RBTN,
+    PSRC_UI_ELEM_LIST,
     PSRC_UI_ELEM_SKIP = 255,
 };
 
 enum {
-    PSRC_UI_MOD_ELEM,
+    PSRC_UI_BDR_NONE,
+    PSRC_UI_BDR_CONVEX,
+    PSRC_UI_BDR_CONCAVE,
+    PSRC_UI_BDR_SOLID,
+};
+
+enum {
     PSRC_UI_MOD_BTNS,
+    PSRC_UI_MOD_ELEM,
     PSRC_UI_MOD_ADD,
+    PSRC_UI_MOD_MOD,
     PSRC_UI_MOD_REMOVE,
     PSRC_UI_MOD_POS,
     PSRC_UI_MOD_SIZE,

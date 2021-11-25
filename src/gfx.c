@@ -138,10 +138,12 @@ void psrc_gfx_render() {
     while (psrc_gfx_objstackp) {psrc_gfx_renderObj(&psrc_gfx_objstack[--psrc_gfx_objstackp]);}
     if (psrc.ui && psrc.ui->renderHook) {
         glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "is2D"), 1);
+        glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "fIs2D"), 1);
         glDisable(GL_DEPTH_TEST);
         psrc.ui->renderHook();
         glEnable(GL_DEPTH_TEST);
         glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "is2D"), 0);
+        glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "fIs2D"), 0);
     }
     glfwSwapInterval(psrc_gfx.vsync);
     glfwSwapBuffers(psrc_gfx.window);
