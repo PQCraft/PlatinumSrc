@@ -17,6 +17,11 @@ typedef struct {
 } psrc_ui_chardata;
 
 typedef struct {
+    int event;
+    psrc_ui_coord pos;
+} psrc_ui_event;
+
+typedef struct {
     char* id;
     int type;
     psrc_ui_coord pos;
@@ -24,7 +29,6 @@ typedef struct {
     int border;
     void* data;
     void* outdata;
-    void (*callback)(char*, void*);
 } psrc_ui_elem;
 
 typedef struct {
@@ -37,8 +41,8 @@ typedef struct {
     uint8_t btns;
     uint8_t cbtns;
     int elemct;
-    void (*callback)(uint16_t, void*);
     psrc_ui_elem* elems;
+    void (*callback)(void*, psrc_ui_elem*, psrc_ui_event);
 } psrc_ui_dialog;
 
 typedef struct {
@@ -53,7 +57,9 @@ typedef struct {
     void (*showUI)(void);
     void (*hideUI)(void);
     void (*deinit)(void);
+    psrc_ui_dialog* (*getDialog)(uint16_t);
     bool shown;
+    double scale;
 } psrc_ui_struct;
 
 psrc_ui_struct* psrc_ui_init();
@@ -89,6 +95,12 @@ enum {
 };
 
 enum {
+    PSRC_UI_BTN_CLOSE = 1,
+    PSRC_UI_BTN_RESIZE = 2,
+    PSRC_UI_BTN_HELP = 4,
+};
+
+enum {
     PSRC_UI_ELEM_BTN,
     PSRC_UI_ELEM_TBOX,
     PSRC_UI_ELEM_PBAR,
@@ -115,11 +127,19 @@ enum {
     PSRC_UI_MOD_POS,
     PSRC_UI_MOD_SIZE,
     PSRC_UI_MOD_CALLBACK,
+    PSRC_UI_MOD_BORDER,
     PSRC_UI_MOD_DATA,
 };
 
-#define PSRC_UI_BTN_CLOSE 1
-#define PSRC_UI_BTN_RESIZE 2
-#define PSRC_UI_BTN_HELP 4
+enum {
+    PSRC_UI_EVENT_CLOSE,
+    PSRC_UI_EVENT_RESIZE,
+    PSRC_UI_EVENT_HELP,
+    PSRC_UI_EVENT_CLICK,
+    PSRC_UI_EVENT_HOLD,
+    PSRC_UI_EVENT_RELEASE,
+    PSRC_UI_EVENT_SUBMIT,
+    PSRC_UI_EVENT_MOVE,
+};
 
 #endif

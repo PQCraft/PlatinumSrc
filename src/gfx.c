@@ -430,12 +430,14 @@ void psrc_gfx_setFullscreen(bool fullscreen) {
         psrc_gfx.cur_height = psrc_gfx.win_height;
         psrc_gfx.cur_fps = psrc_gfx.win_fps;
         int twinx, twiny;
-        uint64_t offset = psrc.utime();
-        do {
+        if (psrc_gfx.fullscr) {
+            uint64_t offset = psrc.utime();
             glfwSetWindowMonitor(psrc_gfx.window, NULL, 0, 0, psrc_gfx.win_width, psrc_gfx.win_height, psrc_gfx.win_fps);
-            glfwGetWindowPos(psrc_gfx.window, &twinx, &twiny);
-        } while (psrc.utime() - offset < 3000000 && (twinx != winox || twiny != winoy));
-        glfwSetWindowPos(psrc_gfx.window, winox, winoy);
+            do {
+                glfwSetWindowPos(psrc_gfx.window, winox, winoy);
+                glfwGetWindowPos(psrc_gfx.window, &twinx, &twiny);
+            } while (psrc.utime() - offset < 3000000 && (twinx != winox || twiny != winoy));
+        }
         psrc_gfx.fullscr = false;
     }
     mat4 projection;

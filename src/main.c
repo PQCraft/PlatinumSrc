@@ -419,6 +419,49 @@ void psrc_main_test_renderObjAtFloors(psrc_gfx_obj* obj) {
     obj->pos.z += 20;
 }
 
+bool psrc_main_test_eventVerbose = false;
+
+void psrc_main_test_testboxCallback(psrc_ui_dialog* box, psrc_ui_elem* elem, psrc_ui_event event) {
+    if (psrc_main_test_eventVerbose) printf("event %d on box %d at (%d, %d)", event.event, box->id, event.pos.x, event.pos.y);
+    if (elem) {
+        if (psrc_main_test_eventVerbose) printf(" on element \"%s\" of type %d", elem->id, elem->type);
+        if (elem->type == PSRC_UI_ELEM_BTN) {
+            if (event.event == PSRC_UI_EVENT_CLICK) elem->border = PSRC_UI_BDR_CONCAVE;
+            else if (event.event == PSRC_UI_EVENT_RELEASE) elem->border = PSRC_UI_BDR_CONVEX;
+        } else if (elem->type == PSRC_UI_ELEM_SLIDER) {
+            if (event.event == PSRC_UI_EVENT_CLICK || event.event == PSRC_UI_EVENT_HOLD) {
+                elem->border = PSRC_UI_BDR_CONCAVE;
+                int expos = elem->pos.x;
+                int exsize = elem->size.x;
+                if (expos < 0) expos = box->size.x - exsize + expos;
+                if (exsize < 0) exsize = box->size.x - elem->pos.x + exsize;
+                expos += 4;
+                exsize -= 16;
+                int mpos = event.pos.x - expos;
+                if (mpos < 0) mpos = 0;
+                if (mpos > exsize - 1) mpos = exsize - 1;
+                int prcnt = (float)mpos * 100 / (float)(exsize - 1);
+                elem->data = (void*)(uintptr_t)prcnt;
+            } else if (event.event == PSRC_UI_EVENT_RELEASE) {
+                elem->border = PSRC_UI_BDR_CONVEX;
+            }
+        } else if (elem->type == PSRC_UI_ELEM_CBOX) {
+            if (event.event == PSRC_UI_EVENT_CLICK) elem->data = (void*)(uintptr_t)!(uintptr_t)elem->data;
+        } else if (elem->type == PSRC_UI_ELEM_RBTN) {
+            if (event.event == PSRC_UI_EVENT_CLICK) {
+                for (int i = 0; i < box->elemct; ++i) {
+                    psrc_ui_elem* lelem = &box->elems[i];
+                    if (lelem->type == PSRC_UI_ELEM_RBTN) lelem->data = (void*)(uintptr_t)0;
+                }
+                elem->data = (void*)(uintptr_t)1;
+            }
+        } else if (elem->type == PSRC_UI_ELEM_PBAR) {
+            if (event.event == PSRC_UI_EVENT_CLICK) elem->data = (void*)(uintptr_t)psrc.randfloat(0, 100);
+        }
+    }
+    if (psrc_main_test_eventVerbose) putchar('\n');
+}
+
 void psrc_main_test() {
     {
         char* cfg = psrc_main_getTextFileSilent("config/base/test.cfg");
@@ -427,8 +470,29 @@ void psrc_main_test() {
         psrc_main_test_mousesns = atof(psrc_main_getCfgVarStatic(cfg, "mousemult", "0.125"));
         psrc_main_test_ps1gfx = psrc_main_cfgValBool(psrc_main_getCfgVarStatic(cfg, "ps1", "false"));
         psrc_main_test_fpsct = psrc_main_cfgValBool(psrc_main_getCfgVarStatic(cfg, "fps", "false"));
+        psrc_main_test_eventVerbose = psrc_main_cfgValBool(psrc_main_getCfgVarStatic(cfg, "events", "false"));
         free(cfg);
     }
+    psrc.ui->newDialog(-1, -1, 400, 300, true, "test", true,
+        PSRC_UI_BTN_CLOSE | PSRC_UI_BTN_RESIZE | PSRC_UI_BTN_HELP, psrc_main_test_testboxCallback, 9,
+        PSRC_UI_ELEM_BTN, "button", 10, 10, 128, 24, PSRC_UI_BDR_CONVEX, "Test",
+        PSRC_UI_ELEM_TBOX, "textbox", 10, 44, -10, 24, PSRC_UI_BDR_CONCAVE, "Test text",
+        PSRC_UI_ELEM_PBAR, "progressbar", 10, 78, -10, 24, PSRC_UI_BDR_SOLID, 25,
+        PSRC_UI_ELEM_SLIDER, "slider", 10, 112, -10, 24, PSRC_UI_BDR_CONVEX, 75,
+        PSRC_UI_ELEM_CBOX, "checkbox 1", 10, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 0,
+        PSRC_UI_ELEM_CBOX, "checkbox 2", 44, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 1,
+        PSRC_UI_ELEM_RBTN, "radio 1", 78, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 0,
+        PSRC_UI_ELEM_RBTN, "radio 2", 112, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 1,
+        PSRC_UI_ELEM_LIST, "list", 10, 180, -10, -10, PSRC_UI_BDR_SOLID, 2, (char*[]){"test", "text"}
+    );
+    #if 0
+    psrc.ui->newDialog(-1, -1, 160, 120, true, "test2", true,
+        PSRC_UI_BTN_HELP, NULL, 3,
+        PSRC_UI_ELEM_BTN, "b0", 10, 10, 56, 24, 1, "Test1",
+        PSRC_UI_ELEM_BTN, "b1", -10, 44, 56, 24, 1, "Test2",
+        PSRC_UI_ELEM_TBOX, "b2", 10, 78, 56, 24, 2, "Test3"
+    );
+    #endif
     psrc.gfx->campos = (psrc_coord_3d){0, 0, 0};
     psrc.gfx->camrot = (psrc_coord_3d){0, 270, 0};
     float vertices[] = {
