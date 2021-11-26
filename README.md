@@ -6,14 +6,14 @@ The DLLs needed for Windows are stored in the [`windll`](https://github.com/PQCr
 
 ---
 Progress (checked = done, <- = being worked on):<br>
-- [ ] Sound engine <-
+- [ ] Sound engine
   - [X] Music
-  - [ ] Sound effects **<-**
-- [ ] UI engine **<-**
-  - [ ] Text rendering
+  - [ ] Sound effects
+- [ ] UI engine <-
+  - [ ] Text rendering **<-**
   - [X] Box rendering
-  - [ ] Element rendering
-  - [ ] Collision and click detection
+  - [X] Element rendering
+  - [X] Collision and click detection
 - [ ] Graphics engine
   - [ ] In-game HUD rendering
   - [X] Objects
