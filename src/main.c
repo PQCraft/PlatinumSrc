@@ -284,7 +284,7 @@ bool psrc_main_test_ps1gfx = false;
 bool psrc_main_test_fpsct = false;
 float psrc_main_test_mousesns = 0.125;
 
-void psrc_main_test_input() {
+static inline void psrc_main_test_input() {
     float pmult = psrc_main_test_posmult;
     float rmult = psrc_main_test_rotmult;
     static bool setui = false;
@@ -402,7 +402,7 @@ void psrc_main_test_input() {
     }
 }
 
-void psrc_main_test_renderObjAtFloors(psrc_gfx_obj* obj) {
+static inline void psrc_main_test_renderObjAtFloors(psrc_gfx_obj* obj) {
     obj->pos.x -= 20;
     obj->pos.z -= 20;
     psrc.gfx->pushObj(obj);
@@ -462,7 +462,15 @@ void psrc_main_test_testboxCallback(psrc_ui_dialog* box, psrc_ui_elem* elem, psr
     if (psrc_main_test_eventVerbose) putchar('\n');
 }
 
-void psrc_main_test() {
+static inline void psrc_main_test() {
+    uint16_t lbox = psrc.ui->newDialog(
+        -2, -2, 200, 48, false, "Loading...",
+        false, 0, NULL, 1,
+        PSRC_UI_ELEM_PBAR, "lbar", 1, 1, 198, 46, PSRC_UI_BDR_NONE, 0
+    );
+    psrc_ui_elem* lbar = psrc.ui->getElem(psrc.ui->getDialog(lbox), "lbar");
+    psrc.ui->shown = true;
+    psrc.gfx->render();
     {
         char* cfg = psrc_main_getTextFileSilent("config/base/test.cfg");
         psrc_main_test_posmult = atof(psrc_main_getCfgVarStatic(cfg, "posmult", "0.25"));
@@ -473,27 +481,9 @@ void psrc_main_test() {
         psrc_main_test_eventVerbose = psrc_main_cfgValBool(psrc_main_getCfgVarStatic(cfg, "events", "false"));
         free(cfg);
     }
-    psrc.ui->newDialog(-1, -1, 400, 300, true, "test", true,
-        PSRC_UI_BTN_CLOSE | PSRC_UI_BTN_RESIZE | PSRC_UI_BTN_HELP, psrc_main_test_testboxCallback, 9,
-        PSRC_UI_ELEM_BTN, "button", 10, 10, 128, 24, PSRC_UI_BDR_CONVEX, "Test",
-        PSRC_UI_ELEM_TBOX, "textbox", 10, 44, -10, 24, PSRC_UI_BDR_CONCAVE, "Test text",
-        PSRC_UI_ELEM_PBAR, "progressbar", 10, 78, -10, 24, PSRC_UI_BDR_SOLID, 25,
-        PSRC_UI_ELEM_SLIDER, "slider", 10, 112, -10, 24, PSRC_UI_BDR_CONVEX, 75,
-        PSRC_UI_ELEM_CBOX, "checkbox 1", 10, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 0,
-        PSRC_UI_ELEM_CBOX, "checkbox 2", 44, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 1,
-        PSRC_UI_ELEM_RBTN, "radio 1", 78, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 0,
-        PSRC_UI_ELEM_RBTN, "radio 2", 112, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 1,
-        PSRC_UI_ELEM_LIST, "list", 10, 180, -10, -10, PSRC_UI_BDR_SOLID, 2, (char*[]){"test", "text"}
-    );
-    #if 0
-    psrc.ui->newDialog(-1, -1, 160, 120, true, "test2", true,
-        PSRC_UI_BTN_HELP, NULL, 3,
-        PSRC_UI_ELEM_BTN, "b0", 10, 10, 56, 24, 1, "Test1",
-        PSRC_UI_ELEM_BTN, "b1", -10, 44, 56, 24, 1, "Test2",
-        PSRC_UI_ELEM_TBOX, "b2", 10, 78, 56, 24, 2, "Test3"
-    );
-    #endif
-    psrc.gfx->campos = (psrc_coord_3d){0, 0, 0};
+    lbar->data = (void*)(uintptr_t)25;
+    psrc.gfx->render();
+    psrc.gfx->campos = (psrc_coord_3d){0, 1, 0};
     psrc.gfx->camrot = (psrc_coord_3d){0, 270, 0};
     float vertices[] = {
         -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
@@ -588,6 +578,8 @@ void psrc_main_test() {
         psrc.gfx->texFarFilter = GL_NEAREST;
     }
     if (glfwRawMouseMotionSupported()) glfwSetInputMode(psrc.gfx->window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    lbar->data = (void*)(uintptr_t)50;
+    psrc.gfx->render();
     psrc_gfx_obj* testobj1 = psrc.gfx->newObj((psrc_coord_3d){7, 1.75, 7}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
         vertices, sizeof(vertices), indices, sizeof(indices), "resources/common/textures/kekw.jpg", 256, 0, true);
     psrc_gfx_obj* testobj3 = psrc.gfx->newObj((psrc_coord_3d){1, 0.5, 1}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){1, 1, 1},
@@ -612,6 +604,8 @@ void psrc_main_test() {
         vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/water.jpg", 0.5, 1, true);
     psrc_gfx_light* camlight = psrc.gfx->getNextLight();
     psrc.gfx->setSkybox(psrc.gfx->newSkybox("/home/pqcraft/Documents/PlatinumSrc/resources/common/textures/skybox1/", ".bmp"));
+    lbar->data = (void*)(uintptr_t)75;
+    psrc.gfx->render();
     camlight->type = 1;
     camlight->range = 0.8;
     camlight->diffuse = (psrc_color){0.75, 0.8, 0.75};
@@ -666,6 +660,30 @@ void psrc_main_test() {
     int fpsbufp = 0;
     int fpsbufm = 0;
     uint64_t rendtime = 0;
+    lbar->data = (void*)(uintptr_t)100;
+    psrc.gfx->render();
+    psrc.ui->shown = false;
+    psrc.ui->closeDialog(lbox);
+    psrc.ui->newDialog(-1, -1, 400, 300, true, "test",
+        true, PSRC_UI_BTN_CLOSE | PSRC_UI_BTN_RESIZE | PSRC_UI_BTN_HELP, psrc_main_test_testboxCallback, 9,
+        PSRC_UI_ELEM_BTN, "button", 10, 10, 128, 24, PSRC_UI_BDR_CONVEX, "Test",
+        PSRC_UI_ELEM_TBOX, "textbox", 10, 44, -10, 24, PSRC_UI_BDR_CONCAVE, "Test text",
+        PSRC_UI_ELEM_PBAR, "progressbar", 10, 78, -10, 24, PSRC_UI_BDR_SOLID, 25,
+        PSRC_UI_ELEM_SLIDER, "slider", 10, 112, -10, 24, PSRC_UI_BDR_CONVEX, 75,
+        PSRC_UI_ELEM_CBOX, "checkbox 1", 10, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 0,
+        PSRC_UI_ELEM_CBOX, "checkbox 2", 44, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 1,
+        PSRC_UI_ELEM_RBTN, "radio 1", 78, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 0,
+        PSRC_UI_ELEM_RBTN, "radio 2", 112, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 1,
+        PSRC_UI_ELEM_LIST, "list", 10, 180, -10, -10, PSRC_UI_BDR_SOLID, 2, (char*[]){"test", "text"}
+    );
+    #if 0
+    psrc.ui->newDialog(-1, -1, 160, 120, true, "test2",
+        true, PSRC_UI_BTN_HELP, psrc_main_test_testboxCallback, 3,
+        PSRC_UI_ELEM_BTN, "b0", 10, 10, 56, 24, 1, "Test1",
+        PSRC_UI_ELEM_BTN, "b1", -10, 44, 56, 24, 1, "Test2",
+        PSRC_UI_ELEM_TBOX, "b2", 10, 78, 56, 24, 2, "Test3"
+    );
+    #endif
     while (!psrc.gfx->winQuit()) {
         uint64_t starttime = psrc.utime();
         float timeval = glfwGetTime();

@@ -58,9 +58,15 @@ typedef struct {
     void (*hideUI)(void);
     void (*deinit)(void);
     psrc_ui_dialog* (*getDialog)(uint16_t);
+    psrc_ui_elem* (*getElem)(psrc_ui_dialog*, char*);
     bool shown;
     double scale;
 } psrc_ui_struct;
+
+typedef struct {
+    int linect;
+    char** lines;
+} psrc_ui_elem_list;
 
 psrc_ui_struct* psrc_ui_init();
 

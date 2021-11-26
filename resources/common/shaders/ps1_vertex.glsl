@@ -16,18 +16,24 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform int is2D;
+
 void main() {
     CurColor = aColor;
     TexCoord = vec2(aTexCoord.x, aTexCoord.y);
     FragPos = vec3(model * vec4(aPos, 1.0));
-    Normal = mat3(transpose(inverse(model))) * aNormal;
-    gl_Position = projection * view * vec4(FragPos, 1.0);
-    float dist = length(gl_Position);
-    float affine = dist + ((gl_Position.w * 8.0) / dist) * 0.5;
-    TexCoord *= affine;
-    vAffine = affine;
-    vec2 resolution = vec2(32, 24);
-    gl_Position.xyz /= gl_Position.w * 0.5;
-    gl_Position.xy = round(resolution * gl_Position.xy) / resolution;
-    gl_Position.xyz *= gl_Position.w * 0.5;
+    if (is2D == 0) {
+        Normal = mat3(transpose(inverse(model))) * aNormal;
+        gl_Position = projection * view * vec4(FragPos, 1.0);
+        float dist = length(gl_Position);
+        float affine = dist + ((gl_Position.w * 8.0) / dist) * 0.5;
+        TexCoord *= affine;
+        vAffine = affine;
+        vec2 resolution = vec2(32, 24);
+        gl_Position.xyz /= gl_Position.w * 0.5;
+        gl_Position.xy = round(resolution * gl_Position.xy) / resolution;
+        gl_Position.xyz *= gl_Position.w * 0.5;
+    } else {
+        gl_Position = vec4(FragPos, 1.0);
+    }
 }

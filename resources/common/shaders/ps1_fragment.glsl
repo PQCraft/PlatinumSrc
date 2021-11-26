@@ -34,6 +34,8 @@ uniform light_struct light[64];
 uniform material_struct material;
 uniform int maxlightindex;
 
+uniform int fIs2D;
+
 vec3 v3zero = vec3(0, 0, 0);
 vec3 v3one = vec3(1, 1, 1);
 
@@ -61,14 +63,21 @@ vec3 calcLight(int i) {
 }
 
 void main() {
-    vec3 result = vec3(0.0, 0.0, 0.0);
-    for (int i = 0; i < maxlightindex; ++i) {
-        if (light[i].type != 0) result += calcLight(i);
-    }
-    result = mix(result, CurColor, material.resis);
-    FragColor = vec4(result, 1.0);
-    if (HasTex != 0) {
-        FragColor *= (texture(TexData, (TexCoord / vAffine)) + (material.shine / 4096));
+    if (fIs2D == 0) {
+        vec3 result = vec3(0.0, 0.0, 0.0);
+        for (int i = 0; i < maxlightindex; ++i) {
+            if (light[i].type != 0) result += calcLight(i);
+        }
+        result = mix(result, CurColor, material.resis);
+        FragColor = vec4(result, 1.0);
+        if (HasTex != 0) {
+            FragColor *= (texture(TexData, (TexCoord / vAffine)) + (material.shine / 4096));
+        }
+    } else {
+        FragColor = vec4(CurColor, 1.0);
+        if (HasTex != 0) {
+            FragColor *= texture(TexData, TexCoord);
+        }
     }
     FragColor.r = float(int(FragColor.r * 255) >> 3 << 3) / 255;
     FragColor.g = float(int(FragColor.g * 255) >> 3 << 3) / 255;
