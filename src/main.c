@@ -852,6 +852,7 @@ int main(int argc, char** argv) {
     }
     skipscargv:;
     if (chdir(psrc_main_pathfilename(psrc_startcmd))) {psrc.displayError(PSRC_ERR, "main", "Could not find resources folder"); psrc_main_cleanExit(1);}
+    srand(psrc_main_utime());
     psrc_main_init();
     psrc_main_test();
     psrc_main_cleanExit(0);
