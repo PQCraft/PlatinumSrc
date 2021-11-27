@@ -65,7 +65,11 @@ typedef struct {
 } psrc_ui_struct;
 
 typedef struct {
+    bool freelist;
     int linect;
+    bool freearray;
+    int start;
+    bool freelines;
     char** lines;
 } psrc_ui_elem_list;
 

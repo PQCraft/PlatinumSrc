@@ -665,7 +665,7 @@ static inline void psrc_main_test() {
     psrc.gfx->render();
     psrc.ui->shown = false;
     psrc.ui->closeDialog(lbox);
-    psrc.ui->newDialog(-1, -1, 400, 300, true, "Test",
+    psrc.ui->newDialog(-1, -1, 400, 300, true, "Test Window",
         true, PSRC_UI_BTN_CLOSE | PSRC_UI_BTN_RESIZE | PSRC_UI_BTN_HELP, psrc_main_test_testboxCallback, 9,
         PSRC_UI_ELEM_BTN, "button", 10, 10, 128, 24, PSRC_UI_BDR_CONVEX, "Button",
         PSRC_UI_ELEM_TBOX, "textbox", 10, 44, -10, 24, PSRC_UI_BDR_CONCAVE, "Textbox",
@@ -675,7 +675,7 @@ static inline void psrc_main_test() {
         PSRC_UI_ELEM_CBOX, "checkbox 2", 44, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 1,
         PSRC_UI_ELEM_RBTN, "radio 1", 78, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 0,
         PSRC_UI_ELEM_RBTN, "radio 2", 112, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 1,
-        PSRC_UI_ELEM_LIST, "list", 10, 180, -10, -10, PSRC_UI_BDR_SOLID, 3, (char*[]){"list", "of", "text"}
+        PSRC_UI_ELEM_LIST, "list", 10, 180, -10, -10, PSRC_UI_BDR_SOLID, &(psrc_ui_elem_list){false, 3, false, 0, false, (char*[]){"list", "of", "text"}}
     );
     #if 0
     psrc.ui->newDialog(-1, -1, 160, 120, true, "test2",

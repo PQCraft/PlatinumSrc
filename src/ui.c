@@ -12,7 +12,7 @@ FT_Face psrc_ui_ftface;
 psrc_ui_chardata psrc_ui_charmap[256];
 int psrc_ui_fontPt = 12;
 int psrc_ui_fontOffset = -1;
-int psrc_ui_fontSpacing = 0;
+int psrc_ui_fontSpacing = 1;
 
 static inline void psrc_ui_deinit() {
     FT_Done_Face(psrc_ui_ftface);
@@ -57,8 +57,8 @@ static inline void psrc_ui_renderText(char* str, float x, float y, float pt, psr
     for (; *str; ++str) {
         psrc_ui_chardata* chr = &psrc_ui_charmap[(unsigned char)*str];
         float nx = x + (chr->bearing.x + psrc_ui_fontSpacing) * scale;
-        float ny = y + (psrc_ui_fontPt - ((float)chr->size.y * 2 - (float)chr->bearing.y) + psrc_ui_fontOffset) * scale;
-        if (ny < y - psrc_ui_fontOffset) ny = y - psrc_ui_fontOffset;
+        float ny = y + (psrc_ui_fontPt - chr->size.y + psrc_ui_fontOffset + chr->size.y - chr->bearing.y) * scale;
+        //if (ny < y - psrc_ui_fontOffset) ny = y - psrc_ui_fontOffset;
         //printf("{%c}: [%f] [%d] [%d] [%f] [%f]\n", *str, scale, chr->size.y, chr->bearing.y, ny, (float)chr->size.y * scale);
         psrc_ui_renderObj2D(chr->obj, nx, ny, (float)chr->size.x * scale, (float)chr->size.y * scale);
         x = nx + (float)(chr->advance >> 6) * scale;
@@ -149,7 +149,7 @@ static inline void psrc_ui_renderDialogBase(int x, int y, int w, int h, bool tba
         psrc_ui_renderElem(PSRC_UI_WIN_TBAR, x, y, w, 24);
         psrc_ui_renderElem(PSRC_UI_WIN_TBAR_LEFT, x, y, 24, 24);
         psrc_ui_renderElem(PSRC_UI_WIN_TBAR_RIGHT, x + w - 24, y, 24, 24);
-        psrc_ui_renderText(title, x + 24, y + 6, 12, (psrc_color){0.9, 0.9, 0.9});
+        psrc_ui_renderText(title, x + 24, y + 5, 12, (psrc_color){0.9, 0.9, 0.9});
         y += 24;
     }
     psrc_ui_renderElem(PSRC_UI_WIN_FILL, x, y, w, h);
@@ -435,16 +435,7 @@ uint16_t psrc_ui_newDialog(int x, int y, int w, int h, bool tbar, char* title, b
                     box->elems[i].data = (void*)(intptr_t)va_arg(elems, int);
                     break;
                 case PSRC_UI_ELEM_LIST:
-                    int lelem = va_arg(elems, int);
-                    char** src = va_arg(elems, char**);
-                    char** dest = malloc(lelem * sizeof(char**));
-                    psrc_ui_elem_list* listdata = malloc(sizeof(psrc_ui_elem_list));
-                    for (int i = 0; i < lelem; ++i) {
-                        dest[i] = strdup(src[i]);
-                    }
-                    listdata->linect = lelem;
-                    listdata->lines = dest;
-                    box->elems[i].data = listdata;
+                    box->elems[i].data = va_arg(elems, void*);
                     break;
             }
         }
@@ -472,11 +463,17 @@ void psrc_ui_closeDialog(uint16_t id) {
             if (elem->data) free(elem->data);
         } else if (elem->type == PSRC_UI_ELEM_LIST) {
             psrc_ui_elem_list* listdata = elem->data;
-            for (int i = 0; i < listdata->linect; ++i) {
-                free(listdata->lines[i]);
+            if (listdata->freelines) {
+                for (int i = 0; i < listdata->linect; ++i) {
+                    free(listdata->lines[i]);
+                }
             }
-            free(listdata->lines);
-            free(listdata);
+            if (listdata->freearray) {
+                free(listdata->lines);
+            }
+            if (listdata->freelist) {
+                free(listdata);
+            }
         }
     }
     psrc_ui_pushToFront(box->id);
@@ -496,7 +493,7 @@ psrc_ui_struct* psrc_ui_init() {
         psrc.displayError(PSRC_ERR, "FT_Init_FreeType", "Failed to initialize FreeType 2 library");
         return NULL;
     }
-    if (FT_New_Face(psrc_ui_ftlib, "resources/base/fonts/micross.ttf", 0, &psrc_ui_ftface)) {
+    if (FT_New_Face(psrc_ui_ftlib, "resources/base/fonts/ui.ttf", 0, &psrc_ui_ftface)) {
         psrc.displayError(PSRC_ERR, "FT_New_Face", "Failed to initialize FreeType 2 face");
         FT_Done_FreeType(psrc_ui_ftlib);
         return NULL;
