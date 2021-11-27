@@ -19,7 +19,7 @@ uniform int is2D;
 
 void main() {
     CurColor = aColor;
-    TexCoord = vec2(aTexCoord.x, aTexCoord.y);
+    TexCoord = aTexCoord;
     FragPos = vec3(model * vec4(aPos, 1.0));
     if (is2D == 0) {
         Normal = mat3(transpose(inverse(model))) * aNormal;

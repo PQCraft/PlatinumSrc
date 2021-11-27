@@ -149,7 +149,7 @@ static inline void psrc_gfx_render() {
     glfwSwapBuffers(psrc_gfx.window);
 }
 
-static inline void psrc_gfx_pushObj(psrc_gfx_obj* obj) {
+void psrc_gfx_pushObj(psrc_gfx_obj* obj) {
     psrc_gfx_objstack[psrc_gfx_objstackp++] = *obj;
 }
 
@@ -186,7 +186,10 @@ psrc_gfx_obj* psrc_gfx_newObj(psrc_coord_3d p, psrc_coord_3d r, psrc_coord_3d s,
     if (t) {
         glGenTextures(1, &obj->texture);
         glBindTexture(GL_TEXTURE_2D, obj->texture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        GLenum colors = GL_RGB;
+        if (nrChannels == 1) colors = GL_RED;
+        else if (nrChannels == 4) colors = GL_RGBA;
+        glTexImage2D(GL_TEXTURE_2D, 0, colors, width, height, 0, colors, GL_UNSIGNED_BYTE, data);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, psrc_gfx.texFarFilter);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, psrc_gfx.texNearFilter);
         if (mm) glGenerateMipmap(GL_TEXTURE_2D);

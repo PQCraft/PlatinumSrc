@@ -1,8 +1,9 @@
 # PlatinumSrc
-A WIP Half Life 1 GoldSrc style 3D engine<br>
+A WIP 90's style 3D engine<br>
 
 ---
-The DLLs needed for Windows are stored in the [`windll`](https://github.com/PQCraft/PlatinumSrc/tree/windll) branch<br>
+<!-- The DLLs needed for Windows are stored in the [`windll`](https://github.com/PQCraft/PlatinumSrc/tree/windll) branch<br> -->
+Compiling on Windows has not been tested and is most likely broken. The dependencies have also changed so the dlls in the `windll` branch are most likely no longer valid.
 
 ---
 Progress (checked = done, <- = being worked on):<br>
@@ -10,10 +11,12 @@ Progress (checked = done, <- = being worked on):<br>
   - [X] Music
   - [ ] Sound effects
 - [ ] UI engine <-
-  - [ ] Text rendering **<-**
+  - [X] Text rendering
   - [X] Box rendering
   - [X] Element rendering
   - [X] Collision and click detection
+    [ ] More elements **<-**
+    [ ] Text input
 - [ ] Graphics engine
   - [ ] In-game HUD rendering
   - [X] Objects

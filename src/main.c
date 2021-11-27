@@ -120,6 +120,7 @@ void psrc_main_getCfgVar(char* fdata, char* var, char* dval, char* out) {
                     else if (*fdata == 't') *out++ = '\t';
                     else if (*fdata == 'e') *out++ = '\e';
                     else if (*fdata == '\n') *out++ = '\n';
+                    else if (*fdata == '\r' && *(fdata + 1) == '\n') {*out++ = '\n'; ++fdata;}
                     else {
                         *out++ = '\\';
                         *out++ = *fdata;
@@ -436,7 +437,7 @@ void psrc_main_test_testboxCallback(psrc_ui_dialog* box, psrc_ui_elem* elem, psr
                 if (expos < 0) expos = box->size.x - exsize + expos;
                 if (exsize < 0) exsize = box->size.x - elem->pos.x + exsize;
                 expos += 4;
-                exsize -= 16;
+                exsize -= 12;
                 int mpos = event.pos.x - expos;
                 if (mpos < 0) mpos = 0;
                 if (mpos > exsize - 1) mpos = exsize - 1;
@@ -664,7 +665,7 @@ static inline void psrc_main_test() {
     psrc.gfx->render();
     psrc.ui->shown = false;
     psrc.ui->closeDialog(lbox);
-    psrc.ui->newDialog(-1, -1, 400, 300, true, "test",
+    psrc.ui->newDialog(-1, -1, 400, 300, true, "Test",
         true, PSRC_UI_BTN_CLOSE | PSRC_UI_BTN_RESIZE | PSRC_UI_BTN_HELP, psrc_main_test_testboxCallback, 9,
         PSRC_UI_ELEM_BTN, "button", 10, 10, 128, 24, PSRC_UI_BDR_CONVEX, "Test",
         PSRC_UI_ELEM_TBOX, "textbox", 10, 44, -10, 24, PSRC_UI_BDR_CONCAVE, "Test text",
@@ -729,11 +730,11 @@ static inline void psrc_main_test() {
         psrc_main_test_renderObjAtFloors(modelp1);
         psrc_main_test_renderObjAtFloors(modelp2);
         psrc_main_test_renderObjAtFloors(modelp3);
-        if (!glfwGetWindowAttrib(psrc.gfx->window, GLFW_FOCUSED)) psrc.wait(1000000 / 15);
         glfwPollEvents();
         psrc_main_test_input();
         if (psrc.ui->shown) psrc.ui->pollUI();
         psrc.gfx->render();
+        if (!glfwGetWindowAttrib(psrc.gfx->window, GLFW_FOCUSED)) psrc.wait(1000000 / 15);
         uint64_t delayoffset = psrc.utime() - starttime;
         if (psrc_main_test_fpsct) {
             ++fpsct;

@@ -3,6 +3,7 @@
 #define PSRC_UI
 
 #include <stdarg.h>
+#include "gfx.h"
 
 typedef struct {
     int x;
@@ -10,10 +11,10 @@ typedef struct {
 } psrc_ui_coord;
 
 typedef struct {
-    unsigned int texid;
     psrc_ui_coord size;
     psrc_ui_coord bearing;
     unsigned int advance;
+    psrc_gfx_obj* obj;
 } psrc_ui_chardata;
 
 typedef struct {

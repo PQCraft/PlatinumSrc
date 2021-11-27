@@ -35,6 +35,9 @@ uniform int maxlightindex;
 
 uniform int fIs2D;
 
+uniform int fIsText;
+uniform vec3 textColor;
+
 vec3 v3zero = vec3(0, 0, 0);
 vec3 v3one = vec3(1, 1, 1);
 
@@ -68,14 +71,19 @@ void main() {
             if (light[i].type != 0) result += calcLight(i);
         }
         result = mix(result, CurColor, material.resis);
-        FragColor = vec4(result, 1.0);
+        FragColor = vec4(result, 1);
         if (HasTex != 0) {
             FragColor *= (texture(TexData, TexCoord) + (material.shine / 4096));
         }
     } else {
-        FragColor = vec4(CurColor, 1.0);
-        if (HasTex != 0) {
-            FragColor *= texture(TexData, TexCoord);
+        if (fIsText == 0) {
+            FragColor = vec4(CurColor, 1.0);
+            if (HasTex != 0) {
+                FragColor *= texture(TexData, TexCoord);
+            }
+        } else {
+            vec4 sampled = vec4(1.0, 1.0, 1.0, texture(TexData, TexCoord).r);
+            FragColor = vec4(textColor, 1.0) * sampled;
         }
     }
 }

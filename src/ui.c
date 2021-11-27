@@ -9,35 +9,76 @@
 psrc_ui_struct psrc_ui;
 FT_Library psrc_ui_ftlib;
 FT_Face psrc_ui_ftface;
+psrc_ui_chardata psrc_ui_charmap[256];
+int psrc_ui_fontPt = 14;
+int psrc_ui_fontOffset = -2;
+int psrc_ui_fontSpacing = 1;
 
 static inline void psrc_ui_deinit() {
     FT_Done_Face(psrc_ui_ftface);
     FT_Done_FreeType(psrc_ui_ftlib);
 }
 
-float psrc_ui_testvertices[] = {
+float psrc_ui_elemvertices[] = {
      0.0f,  0.0f, 0.0f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
      1.0f,  0.0f, 0.0f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
      1.0f,  1.0f, 0.0f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
      0.0f,  1.0f, 0.0f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  0.0f, -1.0f,
 };
 
-unsigned int psrc_ui_testindices[] = {
+float psrc_ui_fontvertices[] = {
+     0.0f,  0.0f, 0.0f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+     1.0f,  0.0f, 0.0f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+     1.0f,  1.0f, 0.0f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+     0.0f,  1.0f, 0.0f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
+};
+
+unsigned int psrc_ui_elemindices[] = {
     0, 1, 2, 2, 3, 0
 };
 
 psrc_gfx_obj* psrc_ui_elemobj[32];
 
-static inline void psrc_ui_renderObj2D(psrc_gfx_obj obj, int x, int y, int w, int h) {
-    obj.pos = (psrc_coord_3d){(float)x * 2 / (float)psrc.gfx->cur_width * psrc_ui.scale - 1, 1 - (((float)y * 2 + (float)h * 2) / (float)psrc.gfx->cur_height * psrc_ui.scale), 0};
-    obj.scale = (psrc_coord_3d){(float)w * 2 / (float)psrc.gfx->cur_width * psrc_ui.scale, (float)h * 2 / (float)psrc.gfx->cur_height * psrc_ui.scale, 1};
-    psrc.gfx->renderObj(&obj);
+static inline void psrc_ui_renderObj2D(psrc_gfx_obj* obj, int x, int y, int w, int h) {
+    psrc_coord_3d oldpos = obj->pos;
+    psrc_coord_3d oldscale = obj->scale;
+    obj->pos = (psrc_coord_3d){(float)x * 2 / (float)psrc.gfx->cur_width * psrc_ui.scale - 1, 1 - (((float)y * 2 + (float)h * 2) / (float)psrc.gfx->cur_height * psrc_ui.scale), 0};
+    obj->scale = (psrc_coord_3d){(float)w * 2 / (float)psrc.gfx->cur_width * psrc_ui.scale, (float)h * 2 / (float)psrc.gfx->cur_height * psrc_ui.scale, 1};
+    psrc.gfx->renderObj(obj);
+    obj->pos = oldpos;
+    obj->scale = oldscale;
+}
+
+static inline void psrc_ui_renderText(char* str, float x, float y, float pt, psrc_color c) {
+    if (!*str) return;
+    glUniform1i(glGetUniformLocation(psrc.gfx->objsprog, "fIsText"), 1);
+    glUniform3f(glGetUniformLocation(psrc.gfx->objsprog, "textColor"), c.r, c.g, c.b);
+    float scale = pt / (float)psrc_ui_fontPt;
+    for (; *str; ++str) {
+        psrc_ui_chardata* chr = &psrc_ui_charmap[(unsigned char)*str];
+        float nx = x + (chr->bearing.x + psrc_ui_fontSpacing) * scale;
+        float ny = y + (psrc_ui_fontPt - ((float)chr->size.y * 2 - (float)chr->bearing.y) + psrc_ui_fontOffset) * scale;
+        //printf("{%c}: [%f] [%d] [%d] [%f] [%f]\n", *str, scale, chr->size.y, chr->bearing.y, ny, (float)chr->size.y * scale);
+        psrc_ui_renderObj2D(chr->obj, nx, ny, (float)chr->size.x * scale, (float)chr->size.y * scale);
+        x = nx + (float)(chr->advance >> 6) * scale;
+    }
+    glUniform1i(glGetUniformLocation(psrc.gfx->objsprog, "fIsText"), 0);
+}
+
+static inline int psrc_ui_getTextWidth(char* str, float pt) {
+    float x = 0.5;
+    float scale = pt / (float)psrc_ui_fontPt;
+    for (; *str; ++str) {
+        psrc_ui_chardata* chr = &psrc_ui_charmap[(unsigned char)*str];
+        x += (chr->bearing.x + psrc_ui_fontSpacing + (float)(chr->advance >> 6)) * scale;
+    }
+    return x;
 }
 
 static inline void psrc_ui_loadElem(int elem, char* prefix, char* img, char* suffix) {
     psrc_ui_elemobj[elem] = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0},
-        psrc_ui_testvertices, sizeof(psrc_ui_testvertices), psrc_ui_testindices, sizeof(psrc_ui_testindices),
-        psrc.getFText("%s%s%s", prefix, img, suffix), 0, 0.5, false);
+        psrc_ui_elemvertices, sizeof(psrc_ui_elemvertices), psrc_ui_elemindices, sizeof(psrc_ui_elemindices),
+        psrc.getFText("%s%s%s", prefix, img, suffix), 0, 1, false);
 }
 
 static inline void psrc_ui_loadUI(char* prefix, char* suffix) {
@@ -71,7 +112,7 @@ static inline void psrc_ui_loadUI(char* prefix, char* suffix) {
 }
 
 static inline void psrc_ui_renderElem(int id, int x, int y, int w, int h) {
-    psrc_ui_renderObj2D(*psrc_ui_elemobj[id], x, y, w, h);
+    psrc_ui_renderObj2D(psrc_ui_elemobj[id], x, y, w, h);
 }
 
 static inline void psrc_ui_renderBorder(int x, int y, int w, int h, int b) {
@@ -103,11 +144,11 @@ static inline void psrc_ui_renderBordered(int e, int x, int y, int w, int h, int
 }
 
 static inline void psrc_ui_renderDialogBase(int x, int y, int w, int h, bool tbar, char* title, bool logo, uint8_t btns, uint8_t cbtns) {
-    (void)title;
     if (tbar) {
         psrc_ui_renderElem(PSRC_UI_WIN_TBAR, x, y, w, 24);
         psrc_ui_renderElem(PSRC_UI_WIN_TBAR_LEFT, x, y, 24, 24);
         psrc_ui_renderElem(PSRC_UI_WIN_TBAR_RIGHT, x + w - 24, y, 24, 24);
+        psrc_ui_renderText(title, x + 24, y + 5, 14, (psrc_color){0.9, 0.9, 0.9});
         y += 24;
     }
     psrc_ui_renderElem(PSRC_UI_WIN_FILL, x, y, w, h);
@@ -140,7 +181,7 @@ static inline void psrc_ui_renderDialog(psrc_ui_dialog* box) {
         if (exsize < 0) exsize = box->size.x - expos + exsize;
         if (eysize < 0) eysize = box->size.y - eypos + eysize;
         int ex = x + expos, ey = y + eypos;
-        switch (box->elems[i].type) {
+        switch (elem->type) {
             case PSRC_UI_ELEM_BTN:
                 psrc_ui_renderBordered(PSRC_UI_WIN_BTN, ex, ey, exsize, eysize, elem->border);
                 break;
@@ -168,6 +209,18 @@ static inline void psrc_ui_renderDialog(psrc_ui_dialog* box) {
             case PSRC_UI_ELEM_LIST:
                 psrc_ui_renderBordered(PSRC_UI_WIN_LIST, ex, ey, exsize, eysize, elem->border);
                 break;
+        }
+        if (elem->type == PSRC_UI_ELEM_BTN) {
+            int xs = psrc_ui_getTextWidth(elem->data, 14);
+            psrc_ui_renderText(elem->data, box->pos.x + expos + exsize / 2 - xs / 2, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 14, (psrc_color){0.9, 0.9, 0.9});
+        } else if (elem->type == PSRC_UI_ELEM_TBOX) {
+            if (!elem->outdata || !*(char*)elem->outdata) {
+                psrc_ui_renderText(elem->data, box->pos.x + expos + 4, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 14, (psrc_color){0.65, 0.65, 0.65});
+            }
+        } else if (elem->type == PSRC_UI_ELEM_PBAR) {
+            char* pcnt = psrc.getFText("%d%%", (uintptr_t)elem->data);
+            int xs = psrc_ui_getTextWidth(pcnt, 14);
+            psrc_ui_renderText(pcnt, box->pos.x + expos + exsize / 2 - xs / 2, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 14, (psrc_color){0, 0, 0});
         }
     }
 }
@@ -448,13 +501,37 @@ psrc_ui_struct* psrc_ui_init() {
         return NULL;
     }
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    FT_Set_Pixel_Sizes(psrc_ui_ftface, 0, 18);
-    for (unsigned char glyph = 0; glyph < 128; ++glyph) {
-        if (FT_Load_Char(psrc_ui_ftface, glyph, FT_LOAD_RENDER)) {
-            psrc.displayError(PSRC_WRN, "FT_Load_Char", psrc.getFText("Failed to load glyph %d", glyph));
+    FT_Set_Pixel_Sizes(psrc_ui_ftface, 0, psrc_ui_fontPt);
+    for (unsigned char chr = 0; chr < 128; ++chr) {
+        if (FT_Load_Char(psrc_ui_ftface, chr, FT_LOAD_RENDER)) {
+            psrc.displayError(PSRC_WRN, "FT_Load_Char", psrc.getFText("Failed to load char %d", chr));
             continue;
         }
+        unsigned int texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_RED,
+            psrc_ui_ftface->glyph->bitmap.width,
+            psrc_ui_ftface->glyph->bitmap.rows,
+            0, GL_RED, GL_UNSIGNED_BYTE,
+            psrc_ui_ftface->glyph->bitmap.buffer
+        );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        psrc_gfx_obj* obj = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0},
+            psrc_ui_fontvertices, sizeof(psrc_ui_fontvertices), psrc_ui_elemindices, sizeof(psrc_ui_elemindices),
+            NULL, 0, 1, false);
+        obj->texture = texture;
+        psrc_ui_charmap[chr].obj = obj;
+        psrc_ui_charmap[chr].size = (psrc_ui_coord){psrc_ui_ftface->glyph->bitmap.width, psrc_ui_ftface->glyph->bitmap.rows};
+        psrc_ui_charmap[chr].bearing = (psrc_ui_coord){psrc_ui_ftface->glyph->bitmap_left, psrc_ui_ftface->glyph->bitmap_top};
+        psrc_ui_charmap[chr].advance = psrc_ui_ftface->glyph->advance.x;
     }
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 0);
     GLint tmp[2] = {psrc.gfx->texNearFilter, psrc.gfx->texFarFilter};
     psrc.gfx->texNearFilter = GL_NEAREST;
     psrc.gfx->texFarFilter = GL_NEAREST;
