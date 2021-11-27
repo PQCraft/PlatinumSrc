@@ -10,9 +10,9 @@ psrc_ui_struct psrc_ui;
 FT_Library psrc_ui_ftlib;
 FT_Face psrc_ui_ftface;
 psrc_ui_chardata psrc_ui_charmap[256];
-int psrc_ui_fontPt = 14;
-int psrc_ui_fontOffset = -2;
-int psrc_ui_fontSpacing = 1;
+int psrc_ui_fontPt = 12;
+int psrc_ui_fontOffset = -1;
+int psrc_ui_fontSpacing = 0;
 
 static inline void psrc_ui_deinit() {
     FT_Done_Face(psrc_ui_ftface);
@@ -58,6 +58,7 @@ static inline void psrc_ui_renderText(char* str, float x, float y, float pt, psr
         psrc_ui_chardata* chr = &psrc_ui_charmap[(unsigned char)*str];
         float nx = x + (chr->bearing.x + psrc_ui_fontSpacing) * scale;
         float ny = y + (psrc_ui_fontPt - ((float)chr->size.y * 2 - (float)chr->bearing.y) + psrc_ui_fontOffset) * scale;
+        if (ny < y - psrc_ui_fontOffset) ny = y - psrc_ui_fontOffset;
         //printf("{%c}: [%f] [%d] [%d] [%f] [%f]\n", *str, scale, chr->size.y, chr->bearing.y, ny, (float)chr->size.y * scale);
         psrc_ui_renderObj2D(chr->obj, nx, ny, (float)chr->size.x * scale, (float)chr->size.y * scale);
         x = nx + (float)(chr->advance >> 6) * scale;
@@ -148,7 +149,7 @@ static inline void psrc_ui_renderDialogBase(int x, int y, int w, int h, bool tba
         psrc_ui_renderElem(PSRC_UI_WIN_TBAR, x, y, w, 24);
         psrc_ui_renderElem(PSRC_UI_WIN_TBAR_LEFT, x, y, 24, 24);
         psrc_ui_renderElem(PSRC_UI_WIN_TBAR_RIGHT, x + w - 24, y, 24, 24);
-        psrc_ui_renderText(title, x + 24, y + 5, 14, (psrc_color){0.9, 0.9, 0.9});
+        psrc_ui_renderText(title, x + 24, y + 6, 12, (psrc_color){0.9, 0.9, 0.9});
         y += 24;
     }
     psrc_ui_renderElem(PSRC_UI_WIN_FILL, x, y, w, h);
@@ -211,16 +212,16 @@ static inline void psrc_ui_renderDialog(psrc_ui_dialog* box) {
                 break;
         }
         if (elem->type == PSRC_UI_ELEM_BTN) {
-            int xs = psrc_ui_getTextWidth(elem->data, 14);
-            psrc_ui_renderText(elem->data, box->pos.x + expos + exsize / 2 - xs / 2, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 14, (psrc_color){0.9, 0.9, 0.9});
+            int xs = psrc_ui_getTextWidth(elem->data, 12);
+            psrc_ui_renderText(elem->data, box->pos.x + expos + exsize / 2 - xs / 2, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 12, (psrc_color){0.9, 0.9, 0.9});
         } else if (elem->type == PSRC_UI_ELEM_TBOX) {
             if (!elem->outdata || !*(char*)elem->outdata) {
-                psrc_ui_renderText(elem->data, box->pos.x + expos + 4, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 14, (psrc_color){0.65, 0.65, 0.65});
+                psrc_ui_renderText(elem->data, box->pos.x + expos + 4, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 12, (psrc_color){0.65, 0.65, 0.65});
             }
         } else if (elem->type == PSRC_UI_ELEM_PBAR) {
             char* pcnt = psrc.getFText("%d%%", (uintptr_t)elem->data);
-            int xs = psrc_ui_getTextWidth(pcnt, 14);
-            psrc_ui_renderText(pcnt, box->pos.x + expos + exsize / 2 - xs / 2, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 14, (psrc_color){0, 0, 0});
+            int xs = psrc_ui_getTextWidth(pcnt, 12);
+            psrc_ui_renderText(pcnt, box->pos.x + expos + exsize / 2 - xs / 2, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 12, (psrc_color){0, 0, 0});
         }
     }
 }
@@ -495,7 +496,7 @@ psrc_ui_struct* psrc_ui_init() {
         psrc.displayError(PSRC_ERR, "FT_Init_FreeType", "Failed to initialize FreeType 2 library");
         return NULL;
     }
-    if (FT_New_Face(psrc_ui_ftlib, "resources/base/fonts/tahoma.ttf", 0, &psrc_ui_ftface)) {
+    if (FT_New_Face(psrc_ui_ftlib, "resources/base/fonts/micross.ttf", 0, &psrc_ui_ftface)) {
         psrc.displayError(PSRC_ERR, "FT_New_Face", "Failed to initialize FreeType 2 face");
         FT_Done_FreeType(psrc_ui_ftlib);
         return NULL;

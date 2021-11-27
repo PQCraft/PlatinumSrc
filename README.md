@@ -15,8 +15,8 @@ Progress (checked = done, <- = being worked on):<br>
   - [X] Box rendering
   - [X] Element rendering
   - [X] Collision and click detection
-    [ ] More elements **<-**
-    [ ] Text input
+  - [ ] More elements **<-**
+  - [ ] Text input
 - [ ] Graphics engine
   - [ ] In-game HUD rendering
   - [X] Objects
