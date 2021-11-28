@@ -608,7 +608,7 @@ static inline void psrc_main_test() {
     psrc_gfx_obj* floor4 = psrc.gfx->newObj((psrc_coord_3d){20, 0, 20}, (psrc_coord_3d){90, 0, 0}, (psrc_coord_3d){25, 25, 25},
         vertices4, sizeof(vertices4), indices2, sizeof(indices2), "resources/common/textures/water.jpg", 0.5, 1, true);
     psrc_gfx_light* camlight = psrc.gfx->getNextLight();
-    psrc.gfx->setSkybox(psrc.gfx->newSkybox("/home/pqcraft/Documents/PlatinumSrc/resources/common/textures/skybox1/", ".bmp"));
+    psrc.gfx->setSkybox(psrc.gfx->newSkybox("resources/common/textures/skybox1/", ".bmp"));
     lbar->data = (void*)(uintptr_t)75;
     psrc.gfx->render();
     camlight->type = 1;
