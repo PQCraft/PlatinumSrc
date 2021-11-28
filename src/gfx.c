@@ -136,7 +136,7 @@ static inline void psrc_gfx_render() {
         psrc_gfx_updateCam();
     }
     while (psrc_gfx_objstackp) {psrc_gfx_renderObj(&psrc_gfx_objstack[--psrc_gfx_objstackp]);}
-    if (psrc.ui && psrc.ui->renderHook) {
+    if (psrc.ui && psrc.ui->renderHook && psrc.ui->shown) {
         glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "is2D"), 1);
         glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "fIs2D"), 1);
         glDisable(GL_DEPTH_TEST);

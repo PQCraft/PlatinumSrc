@@ -18,12 +18,12 @@ ifndef OS
 POBJFLAGS := $(POBJFLAGS) -I/usr/include/freetype2
 else
 ifndef FT2PATH
-FT2PATH := "C:\\Program Files\\mingw-w64\\mingw64\\x86_64-w64-mingw32\\include\\freetype2"
+FT2PATH := "%SYSTEMDRIVE%\\Program Files\\mingw-w64\\mingw64\\x86_64-w64-mingw32\\include\\freetype2"
 endif
 POBJFLAGS := $(POBJFLAGS) -I$(FT2PATH)
 endif
 
-OBJFLAGS := -Ofast
+OBJFLAGS := -Ofast -s
 
 SRC := src
 OBJ := obj
@@ -49,7 +49,7 @@ run: $(BIN)
 
 $(BIN): $(OBJECTS)
 	@echo "Building binary \"$@\" from \"$^\""
-	@$(CC) -o $@ $(CFLAGS) $(PBINFLAGS) $^ $(BINFLAGS)
+	@$(CC) -o $@ $(PCFLAGS) $(PBINFLAGS) $^ $(CFLAGS) $(BINFLAGS)
 	@echo "Built binary \"$@\""
 
 $(OBJ):
@@ -61,7 +61,7 @@ endif
 
 $(OBJ)/%.o: $(SRC)/%.c $(DEPENDS) | $(OBJ)
 	@echo "Compiling object \"$@\" from \"$<\""
-	@$(CC) -o $@ $(CFLAGS) $(POBJFLAGS) -c $< $(OBJFLAGS)
+	@$(CC) -o $@ $(PCFLAGS) $(POBJFLAGS) -c $< $(CFLAGS) $(OBJFLAGS)
 	@echo "Compiled object \"$@\""
 
 clean:

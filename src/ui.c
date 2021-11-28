@@ -370,7 +370,6 @@ static inline void psrc_ui_pollUI() {
 }
 
 static inline void psrc_ui_renderHook() {
-    if (!psrc_ui.shown) return;
     for (int i = 0; i < psrc_ui_dialogstackp; ++i) {
         psrc_ui_renderDialog(psrc_ui_dialogstack[i]);
     }

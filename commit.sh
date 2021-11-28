@@ -12,8 +12,8 @@ mkrel() {
 make clean
 wine make clean
 
-mkrel "make" "PlatinumSrc-Linux-x86_64.zip" "config/ resources/ psrc" "-j8 build" "clean"
-mkrel "wine make" "PlatinumSrc-Windows-x86_64.zip" "config/ resources/ psrc.exe" "-j8 build" "clean"
+mkrel "make" "PlatinumSrc-Linux-x86_64.zip" "config/ resources/ psrc" "CFLAGS=-mtune=generic -j8 build" "clean"
+mkrel "wine make" "PlatinumSrc-Windows-x86_64.zip" "config/ resources/ psrc.exe" "CFLAGS=-mtune=generic -j8 build" "clean"
 
 git add */ Makefile README.md LICENSE *.sh
 git commit -S -m "$verstr"
