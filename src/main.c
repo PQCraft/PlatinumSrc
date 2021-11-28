@@ -1,3 +1,7 @@
+#ifdef _WIN32
+#    pragma comment(linker, "/subsystem:windows /ENTRY:mainCRTStartup")
+#endif
+
 #include "psrc.h"
 #include "main.h"
 
@@ -858,3 +862,15 @@ int main(int argc, char** argv) {
     psrc_main_cleanExit(0);
     return 0;
 }
+/*
+#ifdef _WIN32
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow) {
+    (void)hInstance; (void)hPrevInstance; (void)iCmdShow;
+    char** argv = NULL; int argc = 0;
+    if (!(argv = CommandLineToArgvA(szCmdLine, &argc))) return 1;
+    int ret = main(argc, argv);
+    LocalFree(argv);
+    return ret;
+}
+#endif
+*/

@@ -4,20 +4,26 @@ else
 BIN := psrc.exe
 endif
 
-PBINFLAGS := -L. -L./src/lib -Llib -g -Ofast
-BINFLAGS := -Ofast -lpthread -lm -lSDL2 -lSDL2_mixer
+PBINFLAGS := -L. -L./src/lib
+
+BINFLAGS := -lpthread -lm -lSDL2_mixer -lfreetype -lassimp
 ifndef OS
-BINFLAGS := $(BINFLAGS) -lglfw -ldl -lGL -lassimp -lfreetype
+BINFLAGS := $(BINFLAGS) -lglfw -ldl -lGL -lSDL2
 else
-BINFLAGS := $(BINFLAGS) -lmingw32 -lSDL2main -lopengl32
+BINFLAGS := $(BINFLAGS) -lmingw32 -lSDL2main -lSDL2 -lglfw3 -lgdi32 -lopengl32
 endif
-POBJFLAGS := -Wall -Wextra -I. -I./src/include -Ilib -g
-OBJFLAGS := -Ofast
+
+POBJFLAGS := -I. -I./src/include -I./src/include/freetype2
 ifndef OS
 POBJFLAGS := $(POBJFLAGS) -I/usr/include/freetype2
 else
-POBJFLAGS := $(POBJFLAGS) -I$(SYSTEMDRIVE)\Program Files\mingw-w64\mingw64\x86_64-w64-mingw32\include\freetype2
+ifndef FT2PATH
+FT2PATH := "C:\\Program Files\\mingw-w64\\mingw64\\x86_64-w64-mingw32\\include\\freetype2"
 endif
+POBJFLAGS := $(POBJFLAGS) -I$(FT2PATH)
+endif
+
+OBJFLAGS := 
 
 SRC := src
 OBJ := obj
@@ -43,7 +49,7 @@ run: $(BIN)
 
 $(BIN): $(OBJECTS)
 	@echo "Building binary \"$@\" from \"$^\""
-	@$(CC) -o $@ $(PBINFLAGS) $^ $(BINFLAGS)
+	@$(CC) -o $@ $(CFLAGS) $(PBINFLAGS) $^ $(BINFLAGS)
 	@echo "Built binary \"$@\""
 
 $(OBJ):
@@ -55,7 +61,7 @@ endif
 
 $(OBJ)/%.o: $(SRC)/%.c $(DEPENDS) | $(OBJ)
 	@echo "Compiling object \"$@\" from \"$<\""
-	@$(CC) -o $@ $(POBJFLAGS) -c $< $(OBJFLAGS)
+	@$(CC) -o $@ $(CFLAGS) $(POBJFLAGS) -c $< $(OBJFLAGS)
 	@echo "Compiled object \"$@\""
 
 clean:
