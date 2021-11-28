@@ -456,7 +456,7 @@ psrc_gfx_struct* psrc_gfx_init() {
         psrc_gfx_render, psrc_gfx_renderObj, psrc_gfx_changeShader, psrc_gfx_chkKey, psrc_gfx_setFullscreen, psrc_gfx_winQuit};
     glfwInit();
     char* cfg = psrc.getTextFileSilent("config/base/gfx.cfg");
-    sscanf(psrc.getCfgVarStatic(cfg, "resolution", "640x480@60"), "%ux%u@%u", &psrc_gfx.win_width, &psrc_gfx.win_height, &psrc_gfx.win_fps);
+    sscanf(psrc.getCfgVarStatic(cfg, "resolution", "640x480@0"), "%ux%u@%u", &psrc_gfx.win_width, &psrc_gfx.win_height, &psrc_gfx.win_fps);
     sscanf(psrc.getCfgVarStatic(cfg, "fullresolution", psrc.getFText("%ux%u@%u", psrc_gfx.win_width, psrc_gfx.win_height, psrc_gfx.win_fps)),
         "%ux%u@%u", &psrc_gfx.full_width, &psrc_gfx.full_height, &psrc_gfx.full_fps);
     if (!psrc_gfx.win_width || psrc_gfx.win_width > 32767) psrc_gfx.win_width = 640;
