@@ -1,6 +1,5 @@
 [[ -z "${JOBS}" ]] && JOBS=8
 
-make clean
 make -j$JOBS build
 
 ver="$(grep '#define PSRC ' src/psrc.h | sed 's/#define .* //')"
@@ -20,8 +19,8 @@ wine make clean
 mkrel "make" "PlatinumSrc-Linux-x86_64.zip" "config/ resources/ psrc" "CFLAGS=-mtune=generic -j$JOBS build" "clean"
 mkrel "wine make" "PlatinumSrc-Windows-x86_64.zip" "config/ resources/ psrc.exe" "CFLAGS=-mtune=generic -j$JOBS build" "clean"
 
-git add */ Makefile README.md LICENSE *.sh
-git commit -S -m "$verstr"
-git push
-git tag -s "$ver" -m "$verstr"
-gh release create "$ver" --title "$verstr" --notes "$verstr" *.zip
+git add */ Makefile README.md LICENSE *.sh || exit 1
+git commit -S -m "$verstr" || exit 1
+git push || exit 1
+git tag -s "$ver" -m "$verstr" || exit 1
+gh release create "$ver" --title "$verstr" --notes "$verstr" *.zip || exit 1
