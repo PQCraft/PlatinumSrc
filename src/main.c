@@ -1,7 +1,3 @@
-#ifdef _WIN32
-#    pragma comment(linker, "/subsystem:windows /ENTRY:mainCRTStartup")
-#endif
-
 #include "psrc.h"
 #include "main.h"
 
@@ -440,8 +436,8 @@ void psrc_main_test_testboxCallback(psrc_ui_dialog* box, psrc_ui_elem* elem, psr
                 int exsize = elem->size.x;
                 if (expos < 0) expos = box->size.x - exsize + expos;
                 if (exsize < 0) exsize = box->size.x - elem->pos.x + exsize;
-                expos += 4;
-                exsize -= 12;
+                expos += 5;
+                exsize -= 14;
                 int mpos = event.pos.x - expos;
                 if (mpos < 0) mpos = 0;
                 if (mpos > exsize - 1) mpos = exsize - 1;
@@ -689,6 +685,7 @@ static inline void psrc_main_test() {
         PSRC_UI_ELEM_TBOX, "b2", 10, 78, 56, 24, 2, "Test3"
     );
     #endif
+    psrc.sound->playMusic("resources/common/music/T2.MOD");
     while (!psrc.gfx->winQuit()) {
         uint64_t starttime = psrc.utime();
         float timeval = glfwGetTime();
@@ -862,15 +859,3 @@ int main(int argc, char** argv) {
     psrc_main_cleanExit(0);
     return 0;
 }
-/*
-#ifdef _WIN32
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow) {
-    (void)hInstance; (void)hPrevInstance; (void)iCmdShow;
-    char** argv = NULL; int argc = 0;
-    if (!(argv = CommandLineToArgvA(szCmdLine, &argc))) return 1;
-    int ret = main(argc, argv);
-    LocalFree(argv);
-    return ret;
-}
-#endif
-*/

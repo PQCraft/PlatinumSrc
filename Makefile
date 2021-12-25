@@ -4,7 +4,7 @@ else
 BIN := psrc.exe
 endif
 
-PBINFLAGS := -L. -L./src/lib
+PBINFLAGS := -L. -L./src/lib -flto
 
 BINFLAGS := -lpthread -lm -lSDL2_mixer -lfreetype -lassimp
 ifndef OS
@@ -23,7 +23,7 @@ endif
 POBJFLAGS := $(POBJFLAGS) -I$(FT2PATH)
 endif
 
-OBJFLAGS := -Ofast -s
+OBJFLAGS := -Ofast -s -flto
 
 SRC := src
 OBJ := obj
