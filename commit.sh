@@ -19,7 +19,7 @@ wine make clean
 mkrel "make" "PlatinumSrc-Linux-x86_64.zip" "config/ resources/ psrc" "CFLAGS=-mtune=generic -j$JOBS build" "clean"
 mkrel "wine make" "PlatinumSrc-Windows-x86_64.zip" "config/ resources/ psrc.exe" "CFLAGS=-mtune=generic -j$JOBS build" "clean"
 
-git add */ Makefile README.md LICENSE *.sh || exit 1
+git add */ Makefile README.md LICENSE *.sh
 git commit -S -m "$verstr" || exit 1
 git push || exit 1
 git tag -s "$ver" -m "$verstr" || exit 1
