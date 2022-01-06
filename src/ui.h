@@ -4,29 +4,18 @@
 
 #include <stdarg.h>
 #include "gfx.h"
-
-typedef struct {
-    int x;
-    int y;
-} psrc_ui_coord;
-
-typedef struct {
-    psrc_ui_coord size;
-    psrc_ui_coord bearing;
-    unsigned int advance;
-    psrc_gfx_obj* obj;
-} psrc_ui_chardata;
+#include "gfx2d.h"
 
 typedef struct {
     int event;
-    psrc_ui_coord pos;
+    psrc_coord_2d pos;
 } psrc_ui_event;
 
 typedef struct {
     char* id;
     int type;
-    psrc_ui_coord pos;
-    psrc_ui_coord size;
+    psrc_coord_2d pos;
+    psrc_coord_2d size;
     int border;
     void* data;
     void* outdata;
@@ -34,8 +23,8 @@ typedef struct {
 
 typedef struct {
     unsigned id;
-    psrc_ui_coord pos;
-    psrc_ui_coord size;
+    psrc_coord_2d pos;
+    psrc_coord_2d size;
     bool tbar;
     char* title;
     bool logo;
@@ -62,6 +51,7 @@ typedef struct {
     psrc_ui_elem* (*getElem)(psrc_ui_dialog*, char*);
     bool shown;
     double scale;
+    psrc_gfx2d_font* font;
 } psrc_ui_struct;
 
 typedef struct {

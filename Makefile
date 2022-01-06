@@ -23,7 +23,7 @@ endif
 POBJFLAGS := $(POBJFLAGS) -I$(FT2PATH)
 endif
 
-OBJFLAGS := -Ofast -s -flto
+OBJFLAGS := -Ofast -s -flto -g
 
 SRC := src
 OBJ := obj

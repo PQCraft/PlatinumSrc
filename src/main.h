@@ -10,6 +10,7 @@
 
 #include "sound.h"
 #include "gfx.h"
+#include "gfx2d.h"
 #include "ui.h"
 
 typedef struct {
@@ -26,6 +27,7 @@ typedef struct {
     bool (*cfgValBool)(char*);
     psrc_sound_struct* sound;
     psrc_gfx_struct* gfx;
+    psrc_gfx2d_struct* gfx2d;
     psrc_ui_struct* ui;
     bool quitRequested;
 } psrc_main_struct;

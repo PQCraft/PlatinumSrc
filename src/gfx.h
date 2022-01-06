@@ -103,7 +103,10 @@ typedef struct {
     void (*pushObj)(psrc_gfx_obj*);
     psrc_gfx_obj (*popObj)(void);
     void (*render)(void);
+    void (*update)(void);
+    void (*clear)(void);
     void (*renderObj)(psrc_gfx_obj*);
+    void (*set2D)(bool);
     bool (*changeShader)(GLuint*, char*, char*);
     int (*chkKey)(int);
     void (*setFullscreen)(bool);

@@ -463,6 +463,8 @@ void psrc_main_test_testboxCallback(psrc_ui_dialog* box, psrc_ui_elem* elem, psr
     if (psrc_main_test_eventVerbose) putchar('\n');
 }
 
+psrc_gfx_obj* psrc_main_splash;
+
 static inline void psrc_main_test() {
     uint16_t lbox = psrc.ui->newDialog(
         -2, -2, 200, 48, false, "Loading...",
@@ -703,8 +705,9 @@ static inline void psrc_main_test() {
                 }
                 fpsbufp = (fpsbufp + 1) % 3;
                 uint64_t avgrendtime = rendtime / fpsct;
-                printf("%d frames in %f seconds, %d - %d FPS average, %.*f millisecond average render time\n",
-                    fpsct, timeval - fpstimeval, (fpstotal / fpsbufm - 4) / 5 * 5, (fpstotal / fpsbufm + 6) / 5 * 5, 3, (float)avgrendtime / 1000);
+                printf("%d frames in %f seconds, %d - %d FPS average, %.*f millisecond average render time, vsync %s\n",
+                    fpsct, timeval - fpstimeval, (fpstotal / fpsbufm - 4) / 5 * 5, (fpstotal / fpsbufm + 6) / 5 * 5, 3, (float)avgrendtime / 1000,
+                    (psrc.gfx->vsync) ? "enabled" : "disabled");
                 fpsct = 0;
                 rendtime = 0;
                 fpstimeval = timeval;
@@ -791,6 +794,7 @@ void psrc_main_init() {
         NULL, NULL, NULL, false};
     if (!(psrc.sound = psrc_sound_init())) psrc_main_cleanExit(1);
     if (!(psrc.gfx = psrc_gfx_init())) psrc_main_cleanExit(1);
+    if (!(psrc.gfx2d = psrc_gfx2d_init())) psrc_main_cleanExit(1);
     if (!(psrc.ui = psrc_ui_init())) psrc_main_cleanExit(1);
 }
 
@@ -855,6 +859,18 @@ int main(int argc, char** argv) {
     if (chdir(psrc_main_pathfilename(psrc_startcmd))) {psrc.displayError(PSRC_ERR, "main", "Could not find resources folder"); psrc_main_cleanExit(1);}
     srand(psrc_main_utime());
     psrc_main_init();
+    psrc.gfx->texNearFilter = GL_LINEAR;
+    psrc.gfx->texFarFilter = GL_LINEAR;
+    psrc_main_splash = psrc.gfx2d->new2DObj("resources/base/images/splash.bmp");
+    psrc_main_splash->rot = (psrc_coord_3d){0, 0, 0};
+    psrc.gfx->set2D(true);
+    glfwSetTime(0);
+    while (glfwGetTime() < 1.0f) {
+        psrc.gfx->clear();
+        psrc.gfx2d->renderObj(psrc_main_splash, 0, psrc.gfx->cur_height - 1, psrc.gfx->cur_width, -psrc.gfx->cur_height, 1);
+        psrc.gfx->update();
+    }
+    psrc.gfx->set2D(false);
     psrc_main_test();
     psrc_main_cleanExit(0);
     return 0;

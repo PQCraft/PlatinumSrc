@@ -118,6 +118,25 @@ psrc_gfx_skybox* psrc_gfx_skyboxptr = NULL;
 psrc_gfx_obj psrc_gfx_objstack[4096];
 unsigned int psrc_gfx_objstackp = 0;
 
+void psrc_gfx_set2D(bool val) {
+    glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "is2D"), val);
+    glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "fIs2D"), val);
+    if (val) {
+        glDisable(GL_DEPTH_TEST);
+    } else {
+        glEnable(GL_DEPTH_TEST);
+    }
+}
+
+static inline void psrc_gfx_update() {
+    glfwSwapInterval(psrc_gfx.vsync);
+    glfwSwapBuffers(psrc_gfx.window);
+}
+
+static inline void psrc_gfx_clear() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
 static inline void psrc_gfx_render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if (psrc_gfx_skyboxptr) {
@@ -137,16 +156,11 @@ static inline void psrc_gfx_render() {
     }
     while (psrc_gfx_objstackp) {psrc_gfx_renderObj(&psrc_gfx_objstack[--psrc_gfx_objstackp]);}
     if (psrc.ui && psrc.ui->renderHook && psrc.ui->shown) {
-        glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "is2D"), 1);
-        glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "fIs2D"), 1);
-        glDisable(GL_DEPTH_TEST);
+        psrc_gfx_set2D(true);
         psrc.ui->renderHook();
-        glEnable(GL_DEPTH_TEST);
-        glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "is2D"), 0);
-        glUniform1i(glGetUniformLocation(psrc_gfx.objsprog, "fIs2D"), 0);
+        psrc_gfx_set2D(false);
     }
-    glfwSwapInterval(psrc_gfx.vsync);
-    glfwSwapBuffers(psrc_gfx.window);
+    psrc_gfx_update();
 }
 
 void psrc_gfx_pushObj(psrc_gfx_obj* obj) {
@@ -453,7 +467,8 @@ psrc_gfx_struct* psrc_gfx_init() {
         0, 0, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, psrc_gfx_deinit,
         psrc_gfx_updateCam, psrc_gfx_newSkybox, psrc_gfx_setSkybox, psrc_gfx_getLight, psrc_gfx_getNextLight,
         psrc_gfx_updateLight, psrc_gfx_setMaxLight, psrc_gfx_newObj, psrc_gfx_loadObj, psrc_gfx_pushObj, psrc_gfx_popObj,
-        psrc_gfx_render, psrc_gfx_renderObj, psrc_gfx_changeShader, psrc_gfx_chkKey, psrc_gfx_setFullscreen, psrc_gfx_winQuit};
+        psrc_gfx_render, psrc_gfx_update, psrc_gfx_clear, psrc_gfx_renderObj, psrc_gfx_set2D, psrc_gfx_changeShader, psrc_gfx_chkKey,
+        psrc_gfx_setFullscreen, psrc_gfx_winQuit};
     glfwInit();
     char* cfg = psrc.getTextFileSilent("config/base/gfx.cfg");
     sscanf(psrc.getCfgVarStatic(cfg, "resolution", "640x480@0"), "%ux%u@%u", &psrc_gfx.win_width, &psrc_gfx.win_height, &psrc_gfx.win_fps);

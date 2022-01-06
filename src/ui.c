@@ -1,22 +1,12 @@
 #include "psrc.h"
 #include "ui.h"
 #include "gfx.h"
+#include "gfx2d.h"
 #include "main.h"
 
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
 psrc_ui_struct psrc_ui;
-FT_Library psrc_ui_ftlib;
-FT_Face psrc_ui_ftface;
-psrc_ui_chardata psrc_ui_charmap[256];
-int psrc_ui_fontPt = 12;
-int psrc_ui_fontOffset = -1;
-int psrc_ui_fontSpacing = 1;
 
 static inline void psrc_ui_deinit() {
-    FT_Done_Face(psrc_ui_ftface);
-    FT_Done_FreeType(psrc_ui_ftlib);
 }
 
 float psrc_ui_elemvertices[] = {
@@ -26,55 +16,11 @@ float psrc_ui_elemvertices[] = {
      0.0f,  1.0f, 0.0f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  0.0f, -1.0f,
 };
 
-float psrc_ui_fontvertices[] = {
-     0.0f,  0.0f, 0.0f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  0.0f, -1.0f,
-     1.0f,  0.0f, 0.0f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
-     1.0f,  1.0f, 0.0f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-     0.0f,  1.0f, 0.0f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-};
-
 unsigned int psrc_ui_elemindices[] = {
     0, 1, 2, 2, 3, 0
 };
 
-psrc_gfx_obj* psrc_ui_elemobj[32];
-
-static inline void psrc_ui_renderObj2D(psrc_gfx_obj* obj, int x, int y, int w, int h) {
-    psrc_coord_3d oldpos = obj->pos;
-    psrc_coord_3d oldscale = obj->scale;
-    obj->pos = (psrc_coord_3d){(float)x * 2 / (float)psrc.gfx->cur_width * psrc_ui.scale - 1, 1 - (((float)y * 2 + (float)h * 2) / (float)psrc.gfx->cur_height * psrc_ui.scale), 0};
-    obj->scale = (psrc_coord_3d){(float)w * 2 / (float)psrc.gfx->cur_width * psrc_ui.scale, (float)h * 2 / (float)psrc.gfx->cur_height * psrc_ui.scale, 1};
-    psrc.gfx->renderObj(obj);
-    obj->pos = oldpos;
-    obj->scale = oldscale;
-}
-
-static inline void psrc_ui_renderText(char* str, float x, float y, float pt, psrc_color c) {
-    if (!*str) return;
-    glUniform1i(glGetUniformLocation(psrc.gfx->objsprog, "fIsText"), 1);
-    glUniform3f(glGetUniformLocation(psrc.gfx->objsprog, "textColor"), c.r, c.g, c.b);
-    float scale = pt / (float)psrc_ui_fontPt;
-    for (; *str; ++str) {
-        psrc_ui_chardata* chr = &psrc_ui_charmap[(unsigned char)*str];
-        float nx = x + (chr->bearing.x + psrc_ui_fontSpacing) * scale;
-        float ny = y + (psrc_ui_fontPt - chr->size.y + psrc_ui_fontOffset + chr->size.y - chr->bearing.y) * scale;
-        //if (ny < y - psrc_ui_fontOffset) ny = y - psrc_ui_fontOffset;
-        //printf("{%c}: [%f] [%d] [%d] [%f] [%f]\n", *str, scale, chr->size.y, chr->bearing.y, ny, (float)chr->size.y * scale);
-        psrc_ui_renderObj2D(chr->obj, nx, ny, (float)chr->size.x * scale, (float)chr->size.y * scale);
-        x = nx + (float)(chr->advance >> 6) * scale;
-    }
-    glUniform1i(glGetUniformLocation(psrc.gfx->objsprog, "fIsText"), 0);
-}
-
-static inline int psrc_ui_getTextWidth(char* str, float pt) {
-    float x = 0.5;
-    float scale = pt / (float)psrc_ui_fontPt;
-    for (; *str; ++str) {
-        psrc_ui_chardata* chr = &psrc_ui_charmap[(unsigned char)*str];
-        x += (chr->bearing.x + psrc_ui_fontSpacing + (float)(chr->advance >> 6)) * scale;
-    }
-    return x;
-}
+psrc_gfx_obj* psrc_ui_elemobj[256];
 
 static inline void psrc_ui_loadElem(int elem, char* prefix, char* img, char* suffix) {
     psrc_ui_elemobj[elem] = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0},
@@ -113,7 +59,7 @@ static inline void psrc_ui_loadUI(char* prefix, char* suffix) {
 }
 
 static inline void psrc_ui_renderElem(int id, int x, int y, int w, int h) {
-    psrc_ui_renderObj2D(psrc_ui_elemobj[id], x, y, w, h);
+    psrc.gfx2d->renderObj(psrc_ui_elemobj[id], x, y, w, h, psrc_ui.scale);
 }
 
 static inline void psrc_ui_renderBorder(int x, int y, int w, int h, int b) {
@@ -142,6 +88,10 @@ static inline void psrc_ui_renderBorder(int x, int y, int w, int h, int b) {
 static inline void psrc_ui_renderBordered(int e, int x, int y, int w, int h, int b) {
     psrc_ui_renderElem(e, x, y, w, h);
     psrc_ui_renderBorder(x, y, w, h, b);
+}
+
+void psrc_ui_renderText(char* text, int x, int y, int pt, psrc_color c) {
+    psrc.gfx2d->renderText(psrc_ui.font, text, x * psrc.ui->scale, y * psrc.ui->scale, pt * psrc.ui->scale, c);
 }
 
 static inline void psrc_ui_renderDialogBase(int x, int y, int w, int h, bool tbar, char* title, bool logo, uint8_t btns, uint8_t cbtns) {
@@ -212,7 +162,7 @@ static inline void psrc_ui_renderDialog(psrc_ui_dialog* box) {
                 break;
         }
         if (elem->type == PSRC_UI_ELEM_BTN) {
-            int xs = psrc_ui_getTextWidth(elem->data, 12);
+            int xs = psrc.gfx2d->getTextWidth(psrc_ui.font, elem->data, 12);
             psrc_ui_renderText(elem->data, box->pos.x + expos + exsize / 2 - xs / 2, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 12, (psrc_color){0.9, 0.9, 0.9});
         } else if (elem->type == PSRC_UI_ELEM_TBOX) {
             if (!elem->outdata || !*(char*)elem->outdata) {
@@ -220,7 +170,7 @@ static inline void psrc_ui_renderDialog(psrc_ui_dialog* box) {
             }
         } else if (elem->type == PSRC_UI_ELEM_PBAR) {
             char* pcnt = psrc.getFText("%d%%", (uintptr_t)elem->data);
-            int xs = psrc_ui_getTextWidth(pcnt, 12);
+            int xs = psrc.gfx2d->getTextWidth(psrc_ui.font, pcnt, 12);
             psrc_ui_renderText(pcnt, box->pos.x + expos + exsize / 2 - xs / 2, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 12, (psrc_color){0, 0, 0});
         }
     }
@@ -277,7 +227,7 @@ static inline void psrc_ui_dialogClick(psrc_ui_dialog* box, bool md, int mx, int
     static psrc_ui_elem* eelem = NULL;
     if (box->callback) {
         psrc_ui_event event;
-        event.pos = (psrc_ui_coord){mx, my};
+        event.pos = (psrc_coord_2d){mx, my};
         if (md) {
             if (fc) {
                 event.event = PSRC_UI_EVENT_CLICK;
@@ -360,7 +310,7 @@ static inline void psrc_ui_pollUI() {
             if (clickid > -1 && !clicktb) {
                 psrc_ui_dialogClick(gbox, false, mxpos - gbox->pos.x, mypos - gbox->pos.y - 24 * gbox->tbar);
             } else if (clicktb) {
-                psrc_ui_dialogEvent(gbox, (psrc_ui_event){PSRC_UI_EVENT_MOVE, (psrc_ui_coord){gbox->pos.x, gbox->pos.y}});
+                psrc_ui_dialogEvent(gbox, (psrc_ui_event){PSRC_UI_EVENT_MOVE, (psrc_coord_2d){gbox->pos.x, gbox->pos.y}});
             }
         }
         clickid = -1;
@@ -369,7 +319,10 @@ static inline void psrc_ui_pollUI() {
     }
 }
 
+psrc_gfx_obj* psrc_ui_bgobj;
+
 static inline void psrc_ui_renderHook() {
+    psrc.gfx2d->renderObj(psrc_ui_bgobj, 0, 0, psrc.gfx->cur_width, psrc.gfx->cur_height, 1);
     for (int i = 0; i < psrc_ui_dialogstackp; ++i) {
         psrc_ui_renderDialog(psrc_ui_dialogstack[i]);
     }
@@ -384,17 +337,17 @@ static inline void psrc_ui_hideUI() {
     psrc_ui.shown = false;
 }
 
-psrc_ui_coord psrc_startpos = {50, 50};
+psrc_coord_2d psrc_ui_startpos = {50, 50};
 
 uint16_t psrc_ui_newDialog(int x, int y, int w, int h, bool tbar, char* title, bool logo, uint8_t btns, void* cb, int elemct, ...) {
-    if (x < -1) x = psrc.gfx->cur_width / 2 - w / 2;
-    if (y < -1) y = psrc.gfx->cur_height / 2 - h / 2;
-    if (x == -1) {if (psrc_startpos.x > (int)psrc.gfx->cur_width - w - 50) {psrc_startpos.x = 50;} x = psrc_startpos.x; psrc_startpos.x += 50;}
-    if (y == -1) {if (psrc_startpos.y > (int)psrc.gfx->cur_height - h - 50) {psrc_startpos.y = 50;} y = psrc_startpos.y; psrc_startpos.y += 50;}
+    if (x < -1) x = psrc.gfx->cur_width / psrc_ui.scale / 2 - w / 2;
+    if (y < -1) y = psrc.gfx->cur_height / psrc_ui.scale / 2 - h / 2;
+    if (x == -1) {if (psrc_ui_startpos.x > (int)psrc.gfx->cur_width / psrc_ui.scale - w - 50) {psrc_ui_startpos.x = 50;} x = psrc_ui_startpos.x; psrc_ui_startpos.x += 50;}
+    if (y == -1) {if (psrc_ui_startpos.y > (int)psrc.gfx->cur_height / psrc_ui.scale - h - 50) {psrc_ui_startpos.y = 50;} y = psrc_ui_startpos.y; psrc_ui_startpos.y += 50;}
     psrc_ui_dialog* box = malloc(sizeof(psrc_ui_dialog));
     memset(box, 0, sizeof(psrc_ui_dialog));
-    box->pos = (psrc_ui_coord){x, y};
-    box->size = (psrc_ui_coord){w, h};
+    box->pos = (psrc_coord_2d){x, y};
+    box->size = (psrc_coord_2d){w, h};
     box->tbar = tbar;
     box->title = strdup(title);
     box->logo = logo;
@@ -484,55 +437,15 @@ psrc_ui_struct* psrc_ui_init() {
     psrc_ui = (psrc_ui_struct){psrc_ui_renderHook, psrc_ui_pollUI, psrc_ui_newDialog, NULL, psrc_ui_closeDialog,
         psrc_ui_pushToFront, NULL, psrc_ui_loadUI, psrc_ui_showUI, psrc_ui_hideUI, psrc_ui_deinit,
         psrc_ui_getDialog, psrc_ui_getElem,
-        false, 1};
+        false, 1, psrc.gfx2d->loadFont("resources/base/fonts/ui.ttf", 12, -1, 0)};
     char* cfg = psrc.getTextFileSilent("config/base/ui.cfg");
     psrc_ui.scale = atof(psrc.getCfgVarStatic(cfg, "scale", "1"));
     free(cfg);
-    if (FT_Init_FreeType(&psrc_ui_ftlib)) {
-        psrc.displayError(PSRC_ERR, "FT_Init_FreeType", "Failed to initialize FreeType 2 library");
-        return NULL;
-    }
-    if (FT_New_Face(psrc_ui_ftlib, "resources/base/fonts/ui.ttf", 0, &psrc_ui_ftface)) {
-        psrc.displayError(PSRC_ERR, "FT_New_Face", "Failed to initialize FreeType 2 face");
-        FT_Done_FreeType(psrc_ui_ftlib);
-        return NULL;
-    }
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    FT_Set_Pixel_Sizes(psrc_ui_ftface, 0, psrc_ui_fontPt);
-    for (unsigned char chr = 0; chr < 128; ++chr) {
-        if (FT_Load_Char(psrc_ui_ftface, chr, FT_LOAD_RENDER)) {
-            psrc.displayError(PSRC_WRN, "FT_Load_Char", psrc.getFText("Failed to load char %d", chr));
-            continue;
-        }
-        unsigned int texture;
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_RED,
-            psrc_ui_ftface->glyph->bitmap.width,
-            psrc_ui_ftface->glyph->bitmap.rows,
-            0, GL_RED, GL_UNSIGNED_BYTE,
-            psrc_ui_ftface->glyph->bitmap.buffer
-        );
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        psrc_gfx_obj* obj = psrc.gfx->newObj((psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0}, (psrc_coord_3d){0, 0, 0},
-            psrc_ui_fontvertices, sizeof(psrc_ui_fontvertices), psrc_ui_elemindices, sizeof(psrc_ui_elemindices),
-            NULL, 0, 1, false);
-        obj->texture = texture;
-        psrc_ui_charmap[chr].obj = obj;
-        psrc_ui_charmap[chr].size = (psrc_ui_coord){psrc_ui_ftface->glyph->bitmap.width, psrc_ui_ftface->glyph->bitmap.rows};
-        psrc_ui_charmap[chr].bearing = (psrc_ui_coord){psrc_ui_ftface->glyph->bitmap_left, psrc_ui_ftface->glyph->bitmap_top};
-        psrc_ui_charmap[chr].advance = psrc_ui_ftface->glyph->advance.x;
-    }
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 0);
     GLint tmp[2] = {psrc.gfx->texNearFilter, psrc.gfx->texFarFilter};
     psrc.gfx->texNearFilter = GL_NEAREST;
     psrc.gfx->texFarFilter = GL_NEAREST;
     psrc_ui_loadUI("resources/base/images/ui/", ".bmp");
+    psrc_ui_bgobj = psrc.gfx2d->new2DObj("resources/base/images/ui/bg.bmp");
     psrc.gfx->texNearFilter = tmp[0];
     psrc.gfx->texFarFilter = tmp[1];
     return &psrc_ui;
