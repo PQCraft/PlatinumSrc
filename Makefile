@@ -4,7 +4,7 @@ else
 BIN := psrc.exe
 endif
 
-PBINFLAGS := -L. -L./src/lib -flto
+PBINFLAGS := -Wall -Wextra -L. -L./src/lib -flto
 
 BINFLAGS := -lpthread -lm -lSDL2_mixer -lfreetype -lassimp
 ifndef OS
@@ -13,7 +13,7 @@ else
 BINFLAGS := $(BINFLAGS) -lmingw32 -lSDL2main -lSDL2 -lglfw3 -lgdi32 -lopengl32
 endif
 
-POBJFLAGS := -I. -I./src/include -I./src/include/freetype2
+POBJFLAGS := -Wall -Wextra -I. -I./src/include -I./src/include/freetype2
 ifndef OS
 POBJFLAGS := $(POBJFLAGS) -I/usr/include/freetype2
 else

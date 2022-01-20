@@ -132,16 +132,28 @@ static inline void psrc_ui_renderDialog(psrc_ui_dialog* box) {
         if (exsize < 0) exsize = box->size.x - expos + exsize;
         if (eysize < 0) eysize = box->size.y - eypos + eysize;
         int ex = x + expos, ey = y + eypos;
+        int xs;
         switch (elem->type) {
+            case PSRC_UI_ELEM_LABEL:
+                psrc_ui_renderText(elem->data, box->pos.x + expos + 4, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 12, (psrc_color){0.9, 0.9, 0.9});
+                break;
             case PSRC_UI_ELEM_BTN:
                 psrc_ui_renderBordered(PSRC_UI_WIN_BTN, ex, ey, exsize, eysize, elem->border);
+                xs = psrc.gfx2d->getTextWidth(psrc_ui.font, elem->data, 12);
+                psrc_ui_renderText(elem->data, box->pos.x + expos + exsize / 2 - xs / 2, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 12, (psrc_color){0.9, 0.9, 0.9});
                 break;
             case PSRC_UI_ELEM_TBOX:
                 psrc_ui_renderBordered(PSRC_UI_WIN_TBOX, ex, ey, exsize, eysize, elem->border);
+                if (!elem->outdata || !*(char*)elem->outdata) {
+                    psrc_ui_renderText(elem->data, box->pos.x + expos + 4, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 12, (psrc_color){0.65, 0.65, 0.65});
+                }
                 break;
             case PSRC_UI_ELEM_PBAR:
                 psrc_ui_renderElem(PSRC_UI_WIN_PBAR, ex, ey, (float)exsize * (float)(int)(intptr_t)elem->data / 100.0f, eysize);
                 psrc_ui_renderBorder(ex, ey, exsize, eysize, elem->border);
+                char* pcnt = psrc.getFText("%d%%", (uintptr_t)elem->data);
+                xs = psrc.gfx2d->getTextWidth(psrc_ui.font, pcnt, 12);
+                psrc_ui_renderText(pcnt, box->pos.x + expos + exsize / 2 - xs / 2, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 12, (psrc_color){0, 0, 0});
                 break;
             case PSRC_UI_ELEM_SLIDER:
                 psrc_ui_renderElem(PSRC_UI_WIN_SLD, ex, ey + eysize / 2 - 8, exsize, 16);
@@ -160,18 +172,6 @@ static inline void psrc_ui_renderDialog(psrc_ui_dialog* box) {
             case PSRC_UI_ELEM_LIST:
                 psrc_ui_renderBordered(PSRC_UI_WIN_LIST, ex, ey, exsize, eysize, elem->border);
                 break;
-        }
-        if (elem->type == PSRC_UI_ELEM_BTN) {
-            int xs = psrc.gfx2d->getTextWidth(psrc_ui.font, elem->data, 12);
-            psrc_ui_renderText(elem->data, box->pos.x + expos + exsize / 2 - xs / 2, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 12, (psrc_color){0.9, 0.9, 0.9});
-        } else if (elem->type == PSRC_UI_ELEM_TBOX) {
-            if (!elem->outdata || !*(char*)elem->outdata) {
-                psrc_ui_renderText(elem->data, box->pos.x + expos + 4, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 12, (psrc_color){0.65, 0.65, 0.65});
-            }
-        } else if (elem->type == PSRC_UI_ELEM_PBAR) {
-            char* pcnt = psrc.getFText("%d%%", (uintptr_t)elem->data);
-            int xs = psrc.gfx2d->getTextWidth(psrc_ui.font, pcnt, 12);
-            psrc_ui_renderText(pcnt, box->pos.x + expos + exsize / 2 - xs / 2, box->pos.y + 24 * box->tbar + eypos + eysize / 2 - 7, 12, (psrc_color){0, 0, 0});
         }
     }
 }
@@ -368,6 +368,9 @@ uint16_t psrc_ui_newDialog(int x, int y, int w, int h, bool tbar, char* title, b
             box->elems[i].size.y = va_arg(elems, int);
             box->elems[i].border = va_arg(elems, int);
             switch (box->elems[i].type) {
+                case PSRC_UI_ELEM_LABEL:
+                    box->elems[i].data = strdup(va_arg(elems, char*));
+                    break;
                 case PSRC_UI_ELEM_BTN:
                     box->elems[i].data = strdup(va_arg(elems, char*));
                     break;

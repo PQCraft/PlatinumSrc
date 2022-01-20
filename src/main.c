@@ -84,14 +84,14 @@ void psrc_main_getCfgVar(char* fdata, char* var, char* dval, char* out) {
     if (!var || !dval) return;
     if (!fdata) goto retdef;
     spcskip:;
-    while (*fdata == ' ' || *fdata == '\n') {++fdata;}
+    while (*fdata == ' ' || *fdata == '\t' || *fdata == '\n') {++fdata;}
     if (!*fdata) goto retdef;
     if (*fdata == '#') {while (*fdata && *fdata != '\n') {++fdata;} goto spcskip;}
     for (char* tvar = var; *fdata; ++fdata, ++tvar) {
         bool upc = false;
         if (*fdata >= 'A' && *fdata <= 'Z') {upc = true;}
-        if (*fdata == ' ' || *fdata == '=') {
-            while (*fdata == ' ') {++fdata;}
+        if (*fdata == ' ' || *fdata == '\t' || *fdata == '=') {
+            while (*fdata == ' ' || *fdata == '\t') {++fdata;}
             if (*tvar || *fdata != '=') {while (*fdata && *fdata != '\n') {++fdata;} goto spcskip;}
             else {++fdata; goto getval;}
         } else if (upc && (*fdata) + 32 == *tvar) {
@@ -103,7 +103,7 @@ void psrc_main_getCfgVar(char* fdata, char* var, char* dval, char* out) {
         }
     }
     getval:;
-    while (*fdata == ' ') {++fdata;}
+    while (*fdata == ' ' || *fdata == '\t') {++fdata;}
     if (!*fdata) goto retdef;
     else if (*fdata == '\n') goto spcskip;
     bool inStr = false;
@@ -137,7 +137,7 @@ void psrc_main_getCfgVar(char* fdata, char* var, char* dval, char* out) {
             } else {
                 *out++ = *fdata;
             }
-            if (!inStr && *fdata == ' ') ++spcoff;
+            if (!inStr && (*fdata == ' ' || *fdata == '\t')) ++spcoff;
             else {spcoff = 0;}
         }
         ++fdata;
@@ -463,6 +463,53 @@ void psrc_main_test_testboxCallback(psrc_ui_dialog* box, psrc_ui_elem* elem, psr
     if (psrc_main_test_eventVerbose) putchar('\n');
 }
 
+float psrc_main_test_p1l = 1.0f;
+float psrc_main_test_p2l = 1.0f;
+
+psrc_gfx_light* psrc_main_test_p1light;
+psrc_gfx_light* psrc_main_test_p2light;
+
+void psrc_main_test_lightingBoxCallback(psrc_ui_dialog* box, psrc_ui_elem* elem, psrc_ui_event event) {
+    if (psrc_main_test_eventVerbose) printf("event %d on box %d at (%d, %d)", event.event, box->id, event.pos.x, event.pos.y);
+    if (elem) {
+        if (psrc_main_test_eventVerbose) printf(" on element \"%s\" of type %d", elem->id, elem->type);
+        if (elem->type == PSRC_UI_ELEM_SLIDER) {
+            if (event.event == PSRC_UI_EVENT_CLICK || event.event == PSRC_UI_EVENT_HOLD) {
+                elem->border = PSRC_UI_BDR_CONCAVE;
+                int expos = elem->pos.x;
+                int exsize = elem->size.x;
+                if (expos < 0) expos = box->size.x - exsize + expos;
+                if (exsize < 0) exsize = box->size.x - elem->pos.x + exsize;
+                expos += 5;
+                exsize -= 14;
+                int mpos = event.pos.x - expos;
+                if (mpos < 0) mpos = 0;
+                if (mpos > exsize - 1) mpos = exsize - 1;
+                int prcnt = 0;
+                if (elem->id[6] == '1') {
+                    psrc_main_test_p1l = (float)mpos * 100 / (float)(exsize - 1);
+                    prcnt = psrc_main_test_p1l;
+                    psrc_main_test_p1l /= 100;
+                    psrc_main_test_p1light->ambient = (psrc_color){0.55 * psrc_main_test_p1l, 0.5 * psrc_main_test_p1l, 0.4 * psrc_main_test_p1l};
+                    psrc_main_test_p1light->diffuse = (psrc_color){0.65 * psrc_main_test_p1l, 0.6 * psrc_main_test_p1l, 0.6 * psrc_main_test_p1l};
+                    psrc.gfx->updateLight(psrc_main_test_p1light->id);
+                } else {
+                    psrc_main_test_p2l = (float)mpos * 100 / (float)(exsize - 1);
+                    prcnt = psrc_main_test_p2l;
+                    psrc_main_test_p2l /= 100;
+                    psrc_main_test_p2light->ambient = (psrc_color){0.25 * psrc_main_test_p2l, 0.2 * psrc_main_test_p2l, 0.1 * psrc_main_test_p2l};
+                    psrc_main_test_p2light->diffuse = (psrc_color){0.9 * psrc_main_test_p2l, 0.7 * psrc_main_test_p2l, 0.6 * psrc_main_test_p2l};
+                    psrc.gfx->updateLight(psrc_main_test_p2light->id);
+                }
+                elem->data = (void*)(uintptr_t)prcnt;
+            } else if (event.event == PSRC_UI_EVENT_RELEASE) {
+                elem->border = PSRC_UI_BDR_CONVEX;
+            }
+        }
+    }
+    if (psrc_main_test_eventVerbose) putchar('\n');
+}
+
 psrc_gfx_obj* psrc_main_splash;
 
 static inline void psrc_main_test() {
@@ -495,35 +542,30 @@ static inline void psrc_main_test() {
          0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
         -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  0.0f, -1.0f,
         -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-
         -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f,  1.0f,
          0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  0.0f,  1.0f,
          0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f,  1.0f,
          0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  0.0f,  1.0f,
         -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  0.0f,  1.0f,
         -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f,  0.0f,  1.0f,
-
         -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
         -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f, -1.0f,  0.0f,  0.0f,
         -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
         -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f, -1.0f,  0.0f,  0.0f,
         -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f, -1.0f,  0.0f,  0.0f,
         -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f, -1.0f,  0.0f,  0.0f,
-
          0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
          0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  1.0f,  0.0f,  0.0f,
          0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  1.0f,  0.0f,  0.0f,
          0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  1.0f,  0.0f,  0.0f,
          0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  1.0f,  0.0f,  0.0f,
          0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  1.0f,  0.0f,  0.0f,
-
         -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f, -1.0f,  0.0f,
          0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f, -1.0f,  0.0f,
          0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f, -1.0f,  0.0f,
          0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f, -1.0f,  0.0f,
         -0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 0.0f,  0.0f, -1.0f,  0.0f,
         -0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f, -1.0f,  0.0f,
-
         -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f,  1.0f,  0.0f,
          0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 1.0f,  0.0f,  1.0f,  0.0f,
          0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 1.0f,  1.0f, 0.0f,  0.0f,  1.0f,  0.0f,
@@ -624,6 +666,7 @@ static inline void psrc_main_test() {
     ambientlight->bottomCorner = (psrc_coord_3d){-40, -0.5, -40};
     psrc.gfx->updateLight(ambientlight->id);
     ambientlight = psrc.gfx->getNextLight();
+    psrc_main_test_p1light = ambientlight;
     ambientlight->type = 2;
     ambientlight->range = 1;
     ambientlight->pos = (psrc_coord_3d){40, 20, 0};
@@ -634,6 +677,7 @@ static inline void psrc_main_test() {
     ambientlight->bottomCorner = (psrc_coord_3d){40, -0.5, -40};
     psrc.gfx->updateLight(ambientlight->id);
     ambientlight = psrc.gfx->getNextLight();
+    psrc_main_test_p2light = ambientlight;
     ambientlight->type = 2;
     ambientlight->range = 1;
     ambientlight->pos = (psrc_coord_3d){0, 0, 40};
@@ -679,6 +723,13 @@ static inline void psrc_main_test() {
         PSRC_UI_ELEM_RBTN, "radio 2", 112, 146, 24, 24, PSRC_UI_BDR_CONCAVE, 1,
         PSRC_UI_ELEM_LIST, "list", 10, 180, -10, -10, PSRC_UI_BDR_SOLID, &(psrc_ui_elem_list){false, 3, false, 0, false, (char*[]){"list", "of", "text"}}
     );
+    psrc.ui->newDialog(-1, -1, 480, 122, true, "Lighting",
+        true, 0, psrc_main_test_lightingBoxCallback, 4,
+        PSRC_UI_ELEM_LABEL, "label1", 10, 10, 128, 12, PSRC_UI_BDR_NONE, "Platform 1",
+        PSRC_UI_ELEM_SLIDER, "slider1", 10, 32, -10, 24, PSRC_UI_BDR_CONVEX, 100,
+        PSRC_UI_ELEM_LABEL, "label2", 10, 66, 128, 12, PSRC_UI_BDR_NONE, "Platform 2",
+        PSRC_UI_ELEM_SLIDER, "slider2", 10, 88, -10, 24, PSRC_UI_BDR_CONVEX, 100
+    );
     #if 0
     psrc.ui->newDialog(-1, -1, 160, 120, true, "test2",
         true, PSRC_UI_BTN_HELP, psrc_main_test_testboxCallback, 3,
@@ -687,7 +738,7 @@ static inline void psrc_main_test() {
         PSRC_UI_ELEM_TBOX, "b2", 10, 78, 56, 24, 2, "Test3"
     );
     #endif
-    psrc.sound->playMusic("resources/common/music/T2.MOD");
+    //psrc.sound->playMusic("resources/common/music/T2.MOD");
     while (!psrc.gfx->winQuit()) {
         uint64_t starttime = psrc.utime();
         float timeval = glfwGetTime();
@@ -791,7 +842,7 @@ void psrc_main_init() {
     psrc = (psrc_main_struct){psrc_main_displayError, psrc_main_wait, psrc_main_utime, psrc_main_randfloat,
         psrc_main_getTextFile, psrc_main_getTextFileSilent, psrc_main_getFText,
         psrc_main_getCfgVar, psrc_main_getCfgVarStatic, psrc_main_getCfgVarAlloc, psrc_main_cfgValBool,
-        NULL, NULL, NULL, false};
+        NULL, NULL, NULL, NULL, false};
     if (!(psrc.sound = psrc_sound_init())) psrc_main_cleanExit(1);
     if (!(psrc.gfx = psrc_gfx_init())) psrc_main_cleanExit(1);
     if (!(psrc.gfx2d = psrc_gfx2d_init())) psrc_main_cleanExit(1);
@@ -861,16 +912,27 @@ int main(int argc, char** argv) {
     psrc_main_init();
     psrc.gfx->texNearFilter = GL_LINEAR;
     psrc.gfx->texFarFilter = GL_LINEAR;
-    psrc_main_splash = psrc.gfx2d->new2DObj("resources/base/images/splash.bmp");
-    psrc_main_splash->rot = (psrc_coord_3d){0, 0, 0};
-    psrc.gfx->set2D(true);
-    glfwSetTime(0);
-    while (glfwGetTime() < 1.0f) {
-        psrc.gfx->clear();
-        psrc.gfx2d->renderObj(psrc_main_splash, 0, psrc.gfx->cur_height - 1, psrc.gfx->cur_width, -psrc.gfx->cur_height, 1);
-        psrc.gfx->update();
+    bool splash = true;
+    float splashtime = 1.0;
+    {
+        char* cfg = psrc_main_getTextFileSilent("config/base/main.cfg");
+        splash = psrc_main_cfgValBool(psrc_main_getCfgVarStatic(cfg, "splash", "true"));
+        splashtime = atof(psrc_main_getCfgVarStatic(cfg, "splashtime", "1.0"));
+        free(cfg);
     }
-    psrc.gfx->set2D(false);
+    if (splash) {
+        psrc_main_splash = psrc.gfx2d->new2DObj("resources/base/images/splash.bmp");
+        psrc_main_splash->rot = (psrc_coord_3d){0, 0, 0};
+        psrc.gfx->set2D(true);
+        glfwSetTime(0);
+        while (glfwGetTime() < splashtime) {
+            psrc.gfx->clear();
+            psrc.gfx2d->renderObj(psrc_main_splash, 0, psrc.gfx->cur_height - 1, psrc.gfx->cur_width, -psrc.gfx->cur_height, 1);
+            psrc.gfx->update();
+        }
+        psrc.gfx->set2D(false);
+    }
+    glfwSetTime(0);
     psrc_main_test();
     psrc_main_cleanExit(0);
     return 0;

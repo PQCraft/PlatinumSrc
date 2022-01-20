@@ -102,6 +102,7 @@ enum {
 };
 
 enum {
+    PSRC_UI_ELEM_LABEL,
     PSRC_UI_ELEM_BTN,
     PSRC_UI_ELEM_TBOX,
     PSRC_UI_ELEM_PBAR,
